@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0iIzBmNzY2ZSIvPjx0ZXh0IHg9IjI1NiIgeT0iNDAwIiBmb250LXNpemU9IjM0MCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+8J+QlTwvdGV4dD48L3N2Zz4=">
 <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0iIzBmNzY2ZSIvPjx0ZXh0IHg9IjI1NiIgeT0iNDAwIiBmb250LXNpemU9IjM0MCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+8J+QlTwvdGV4dD48L3N2Zz4=">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" onerror="console.warn('Chart.js لود نشد')"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" onerror="console.warn('XLSX لود نشد')"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--bg:#f5f7fa;--card:#fff;--soft:#f0f4f8;--text:#1a2332;--muted:#64748b;--border:#e5e9f0;--primary:#0f766e;--primary-2:#0d9488;--primary-light:#f0fdf4;--danger:#dc2626;--warning:#f59e0b;--success:#16a34a;--info:#2563eb;--purple:#9333ea;--radius:14px;--base-font:14px}
@@ -249,7 +249,6 @@ input[type="range"]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;b
 </style>
 </head>
 <body>
-
 <div class="splash" id="splash"><div class="si">🐔</div><div class="st">مدیریت مرغداری</div><div class="ss">آدینه — نسخه ۱.۶</div></div>
 
 <div class="header">
@@ -643,7 +642,6 @@ function runDialogAction(i){const cb=(window._dialogCallbacks||[])[i];closeDialo
 function closeDialog(){$('dialog').classList.remove('on');}
 function askSave(message,cb){showDialog({icon:'💾',title:'ذخیره اطلاعات؟',message:message||'آیا اطلاعات ذخیره شود؟',actions:[{text:'انصراف',type:'secondary',onClick:closeDialog},{text:'💾 ذخیره',type:'success',onClick:cb}]});}
 function askDelete(itemName,cb){showDialog({icon:'🗑️',title:'حذف شود؟',message:`آیا از حذف <b>"${itemName}"</b> مطمئن هستید؟`,actions:[{text:'انصراف',type:'secondary',onClick:closeDialog},{text:'🗑️ حذف',type:'danger',onClick:cb}]});}
-
 /* ═══ THEME ═══ */
 let systemThemeListener=null;
 async function loadTheme(){
@@ -716,7 +714,6 @@ function setAllDSec(open){
 const DASHBOARD_CARDS=[
   {id:'chart',title:'📈 نمودار عملکرد'},
   {id:'cost',title:'💵 قیمت تمام‌شده'},
-  {id:'prediction',title:'🔮 پیش‌بینی تولید'},
   {id:'flocks',title:'🐔 وضعیت گله‌ها'},
   {id:'incubation',title:'🥚 خلاصه جوجه‌کشی'},
   {id:'week',title:'📊 گزارش هفتگی'},
@@ -734,7 +731,6 @@ function renderDashboardCards(){
     let body='';
     if(id==='chart'){body=`<div class="chart-types"><button class="ct-btn ${chartType==='line'?'on':''}" onclick="setChartType('line')">📈 خطی</button><button class="ct-btn ${chartType==='doughnut'?'on':''}" onclick="setChartType('doughnut')">🥧 دایره‌ای</button></div><div class="tabs"><button class="tab ${chartRange===14?'on':''}" onclick="setChartRange(14)">۱۴ روزه</button><button class="tab ${chartRange==='week'?'on':''}" onclick="setChartRange('week')">هفتگی</button><button class="tab ${chartRange==='month'?'on':''}" onclick="setChartRange('month')">ماهانه</button></div><div class="chart-box"><canvas id="mainChart"></canvas></div><div id="chartStats"></div>`;}
     else if(id==='cost')body=`<div id="costBox"></div>`;
-    else if(id==='prediction')body='<div id="predictionBox"></div>';
     else if(id==='flocks')body='<div id="flockStatus"></div>';
     else if(id==='incubation')body='<div id="incSummaryBox"></div>';
     else if(id==='week')body='<div id="weekBox"></div>';
@@ -831,13 +827,6 @@ function renderDashboard(){
     const avgRate=totalEggs>0?(totalHatched/totalEggs*100):0;
     incSum.innerHTML=`<div class="kpi"><div class="kbox b"><div class="kl">🥚 کل تخم</div><div class="kv">${fa(totalEggs)}</div></div><div class="kbox g"><div class="kl">🐣 کل جوجه</div><div class="kv">${fa(totalHatched)}</div></div><div class="kbox p"><div class="kl">💰 فروش</div><div class="kv">${fa(totalSold)}</div></div><div class="kbox o"><div class="kl">📊 نرخ هچ</div><div class="kv">${avgRate.toFixed(1)}٪</div></div></div><div style="font-size:11px;color:var(--muted);margin-top:6px">📈 نرخ هچ کل</div>${spectrumBar(avgRate)}<div class="mini"><span class="k">💵 درآمد</span><span class="v" style="color:var(--success)">${fmtMoney(totalIncome)}</span></div><div class="mini"><span class="k">🧾 هزینه</span><span class="v" style="color:var(--warning)">${fmtMoney(totalCost)}</span></div><div class="mini"><span class="k">📈 سود</span><span class="v" style="color:${totalIncome-totalCost>=0?'var(--success)':'var(--danger)'}">${fmtMoney(totalIncome-totalCost)}</span></div>`;
   }
-  const predBox=$('predictionBox');
-  if(predBox){
-    let ph='';let has=false;
-    flocks.forEach(f=>{const p=predictWeekly(f.name);if(p){has=true;ph+=`<div class="kbox g" style="margin-bottom:5px;text-align:right;padding:9px"><div class="kl">🐔 ${f.name}</div><div class="kv">${fa(p.daily)} تخم/روز</div><div style="font-size:10.5px;color:var(--muted);margin-top:2px">هفته: ${fa(p.weekly)} | ${p.trend}</div></div>`;}});
-    if(!has)ph='<div class="alert b">حداقل ۳ روز داده لازم است</div>';
-    predBox.innerHTML=ph;
-  }
   const fBox=$('flockStatus');
   if(fBox){
     let fh='';
@@ -904,17 +893,6 @@ function renderCostSection(){
   groups.forEach(g=>{const members=flocks.filter(f=>f.groupId===g.id);if(!members.length)return;const totalInit=members.reduce((s,m)=>s+(+m.count||0),0);const c=costFor(g.name,totalInit,daily);rows.push(`<div class="item group" style="border-right-color:${g.color||'#3b82f6'}"><div class="info"><div class="t">🏠 ${g.name} (گروه)</div><div class="s">💰 جمع: <b>${fmtMoney(c.total)}</b> | زنده: ${fa(c.alive)}</div></div><div style="text-align:left"><div style="font-size:10.5px;color:var(--muted)">هر جوجه</div><div style="font-weight:900;color:${g.color||'#3b82f6'};font-size:15px">${fmtMoney(Math.round(c.perChick))}</div></div></div>`);});
   costBox.innerHTML=rows.join('')||'<div class="empty"><div class="et">گله‌ای نیست</div></div>';
 }
-function predictWeekly(name){
-  const arr=[];const daily=calcDaily();
-  for(let i=0;i<daily.length;i++){const d=daily[i];if(d.flock===name&&d.eggs>0)arr.push(d);}
-  if(arr.length<3)return null;
-  const last=arr.slice(-10),n=last.length;
-  let sx=0,sy=0,sxy=0,sx2=0;
-  for(let i=0;i<n;i++){sx+=i;sy+=last[i].eggs;sxy+=i*last[i].eggs;sx2+=i*i;}
-  const slope=(n*sxy-sx*sy)/(n*sx2-sx*sx)||0;const inter=(sy-slope*sx)/n;
-  const nextAvg=Math.max(0,Math.round(slope*(n+3)+inter));
-  return {daily:nextAvg,weekly:nextAvg*7,trend:slope>0?'صعودی':slope<0?'نزولی':'ثابت'};
-}
 function generateAlerts(){
   const a=[];const daily=calcDaily();const recent=daily.slice(-3);const maxMort=getStd('mortalityMax')||0.5;
   for(let i=0;i<recent.length;i++){const d=recent[i];if(d.lossPct>(maxMort/100))a.push({type:'r',icon:'💀',text:`تلفات ${(d.lossPct*100).toFixed(2)}% - ${d.flock}`});}
@@ -953,7 +931,6 @@ function drawMainChart(){
   const cs=$('chartStats');
   if(cs)cs.innerHTML=`<div class="sdiv">خلاصه</div><div class="kpi"><div class="kbox b"><div class="kl">🥚 کل تخم</div><div class="kv">${fa(tE)}</div></div><div class="kbox r"><div class="kl">💀 تلفات</div><div class="kv">${fa(tD)}</div></div><div class="kbox o"><div class="kl">🌾 خوراک</div><div class="kv">${fa(tF)}kg</div></div><div class="kbox p"><div class="kl">📅 تعداد</div><div class="kv">${fa(n)}</div></div></div>`;
 }
-
 const DAILY_TABS_ORDER=['all','deaths','eggs','weight'];
 const DAILY_TABS_LABELS={all:'همه',deaths:'💀 تلفات',eggs:'🥚 تخم',weight:'⚖️ وزن'};
 function getTabsOrder(){if(!uiState.dailyTabsOrder)uiState.dailyTabsOrder=[...DAILY_TABS_ORDER];return uiState.dailyTabsOrder.filter(t=>DAILY_TABS_ORDER.includes(t));}
@@ -1355,7 +1332,6 @@ async function confirmMerge(){
     flocks=await dbAll('flocks');dailyLog=await dbAll('dailyLog');rebuildMaps();invalidateCache();autoBackupToLocal();closeModal();toast('✅');rAF(()=>{renderFlocks();renderDashboard();});
   });
 }
-
 function renderSales(){
   const sorted=[...sales].sort((a,b)=>jToC(b.date)-jToC(a.date));
   const total=sorted.reduce((s,x)=>s+(+x.count||0)*(+x.price||0),0);
@@ -1560,7 +1536,6 @@ function renderStandards(){const html=standards.map(s=>`<div class="item" style=
 function openStandardForm(id){const item=id?standards.find(x=>x.id===id):{key:'',label:'',value:0,type:'min',unit:''};openModal(id?'✏️':'➕ استاندارد',`<div class="fg"><label class="fl">🔑 کلید</label><input class="fi" id="stdKey" value="${item.key}"></div><div class="fg"><label class="fl">📝 برچسب</label><input class="fi" id="stdLabel" value="${item.label}"></div><div class="fr"><div class="fg"><label class="fl">📊 مقدار</label><input class="fi" type="number" step="0.1" id="stdValue" value="${item.value}"></div><div class="fg"><label class="fl">🏷️ واحد</label><input class="fi" id="stdUnit" value="${item.unit}"></div></div><div class="fg"><label class="fl">🎯 نوع</label><select class="fs" id="stdType"><option value="min" ${item.type==='min'?'selected':''}>حداقل</option><option value="max" ${item.type==='max'?'selected':''}>حداکثر</option></select></div><button class="btn btn-p" onclick="saveStandard(${id||'null'})">💾</button>`);}
 async function saveStandard(id){const item={key:$('stdKey').value.trim(),label:$('stdLabel').value.trim(),value:+$('stdValue').value||0,unit:$('stdUnit').value.trim(),type:$('stdType').value};if(!item.key){toast('❌');return;}if(id)item.id=id;await dbPut('standards',item);standards=await dbAll('standards');invalidateCache();autoBackupToLocal();closeModal();toast('✅');rAF(renderStandards);}
 async function deleteStandard(id){const s=standards.find(x=>x.id===id);askDelete(s?s.label||s.key:'استاندارد',async()=>{await dbDel('standards',id);standards=await dbAll('standards');autoBackupToLocal();rAF(renderStandards);});}
-
 let settingsView='main';
 function openSettings(){settingsView='main';renderSettingsModal();}
 function renderSettingsModal(){
@@ -1652,7 +1627,6 @@ function openVaxSchedForm(id){const item=id?vaxSchedules.find(x=>x.id===id):{nam
 async function saveVaxSched(id){const item={name:$('vsName').value.trim(),age:+$('vsAge').value||0,method:$('vsMethod').value.trim()};if(!item.name){toast('❌');return;}if(id)item.id=id;await dbPut('vaxSchedules',item);vaxSchedules=await dbAll('vaxSchedules');autoBackupToLocal();closeModal();toast('✅');settingsView='vaxSched';renderSettingsModal();}
 async function deleteVaxSched(id){const v=vaxSchedules.find(x=>x.id===id);askDelete(v?v.name:'واکسن',async()=>{await dbDel('vaxSchedules',id);vaxSchedules=await dbAll('vaxSchedules');autoBackupToLocal();settingsView='vaxSched';renderSettingsModal();});}
 
-/* ═══ BACKUP (جمع‌وجور) ═══ */
 function renderSettingsBackup(){
   const ab=getAutoBackupInfo();
   const logs=backupLog.slice().sort((a,b)=>b.time-a.time).slice(0,5);
@@ -1793,7 +1767,6 @@ function renderSettingsHelp(){
   <details class="help-d"><summary class="help-s">🎨 تم و فونت</summary><div class="help-c">
     <p><strong>۳ حالت تم:</strong> روشن، تیره، خودکار (طبق تنظیمات گوشی)</p>
     <p><strong>فونت:</strong> غربیلک برای تنظیم سایز بین ۱۱ تا ۲۰ پیکسل</p>
-    <p>تنظیمات از فایل `تنظیمات ← حالت نمایش و فونت` قابل تغییر است.</p>
   </div></details>
   <details class="help-d"><summary class="help-s">☁️ همگام‌سازی ابری</summary><div class="help-c">
     <p><strong>۱. اشتراک‌گذاری:</strong> دکمه 📤 → Google Drive، Telegram، WhatsApp یا Email</p>
@@ -1861,7 +1834,7 @@ function importExcel(){
       const cD=find('تاریخ','date'),cF=find('گله','flock'),cDe=find('تلفات','deaths'),cE=find('تخم','eggs'),cB=find('شکسته','broken'),cDi=find('کثیف','dirty'),cFe=find('خوراک','feed'),cW=find('آب','water'),cT=find('دما','temp'),cH=find('رطوبت','humidity'),cN=find('مشاهدات','notes'),cWe=find('وزن','weight'),cLc=find('علت','cause');
       if(cD<0||cF<0){toast('❌ تاریخ/گله');return;}
       let n=0;
-      for(let i=1;i<rows.length;i++){const r=rows[i];if(!r||!r[cD])continue;const item={date:String(r[cD]).replace(/-/g,'/').trim(),flock:String(r[cF]||'').trim(),deaths:+r[cDe]||0,eggs:+r[cE]||0,broken:cB>=0?+r[cB]||0:0,dirty:cDi>=0?+r[cDi]||0:0,feed:+r[cFe]||0,water:+r[cW]||0,temp:cT>=0?String(r[cT]||''):'',humidity:cH>=0?String(r[cH]||''):'',notes:cN>=0?String(r[cN]||''):'',weight:+r[cWe]||0,lossCause:cLc>=0?String(r[cLc]||''):''};if(!item.flock)continue;await dbPut('dailyLog',item);n++;}
+      for(let i=1;i<rows.length;i++){const r=rows[i];if(!r||!r[cD])continue;const item={date:String(r[cD]).replace(/-/g,'/').trim(),flock:String(r[cF]||'').trim(),deaths:+r[cDe]||0,eggs:+r[cE]||0,broken:cB>=0?+r[cB]||0:0,dirty:cDi>=0?+r[cDi]||0:0,feed:+r[cFe]||0,water:+r[cW]||0,temp:cT>=0?String(r[cT]||''):'',humidity:cH>=0?String(r[cH]||''):'',notes:cN>=0?String(r[cN]||''):'',weight:+r[cWe]||0,lossCause:cLc>=0?String(r[cLc]||''):''};if(!item.flock)continue;await dbPut('dailyLog',item);n++;} 
       dailyLog=await dbAll('dailyLog');invalidateCache();autoBackupToLocal();closeModal();toast(`✅ ${n} رکورد`);
     }catch(err){console.error(err);toast('❌ '+err.message);}
   };input.click();
