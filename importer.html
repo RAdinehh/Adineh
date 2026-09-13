@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تبدیل اکسل گله به آدینه</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+body{font-family:Tahoma;background:#0f172a;color:#f1f5f9;padding:20px;direction:rtl;font-size:15px;line-height:1.8}
+h1{font-size:20px;margin-bottom:20px;text-align:center}
+button{padding:15px 20px;background:#0f766e;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;width:100%;margin-bottom:15px;font-family:inherit}
+button:disabled{background:#64748b;cursor:not-allowed}
+.info{background:#1e293b;padding:15px;border-radius:10px;font-size:13px;line-height:1.9;margin-bottom:15px;border-right:3px solid #3b82f6}
+.success{background:#064e3b;border-right-color:#10b981}
+.error{background:#7f1d1d;border-right-color:#ef4444}
+.hidden{display:none}
+</style>
+</head>
+<body>
+
+<h1>🐔 تبدیل اکسل گله به آدینه</h1>
+
+<div class="info">
+  <b>مراحل:</b><br>
+  ۱. فایل اکسل گله رو انتخاب کن<br>
+  ۲. دکمه «تبدیل» رو بزن<br>
+  ۳. یه فایل JSON دانلود می‌شه<br>
+  ۴. برو توی آدینه → ⚙️ تنظیمات → 💾 پشتیبان‌گیری → 📤 بازیابی از فایل<br>
+  ۵. فایل JSON دانلودشده رو انتخاب کن
+</div>
+
+<input type="file" id="fileInput" accept=".xlsx,.xls" class="hidden">
+<button onclick="document.getElementById('fileInput').click()">📂 انتخاب فایل اکسل</button>
+<button id="convertBtn" onclick="convert()" disabled>🔄 تبدیل به آدینه</button>
+
+<div id="result"></div>
+
+<script>
+let workbookData = null;
+
+document.getElementById('fileInput').onchange = function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      workbookData = XLSX.read(ev.target.result, {type: 'array'});
+      document.getElementById('convertBtn').disabled = false;
+      document.getElementById('result').innerHTML = 
+        '<div class="success info">✅ فایل خوانده شد<br><b>شیت‌ها:</b> ' + workbookData.SheetNames.join(' — ') + '</div>';
+    } catch(err) {
+      document.getElementById('result').innerHTML = '<div class="error info">❌ خطا: ' + err.message + '</div>';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+};
+
+function cleanCell(v) {
+  if (v === null || v === undefined) return '';
+  const s = String(v);
+  if (s.includes('__xludf') || s.includes('DUMMYFUNCTION') || s.includes('ArrayFormula')) return '';
+  if (s.includes('openpyxl.worksheet.formula')) return '';
+  return s.trim();
+}
+
+function parseNum(v) {
+  if (v === null || v === undefined) return 0;
+  if (typeof v === 'number') return v;
+  const s = cleanCell(v);
+  if (!s) return 0;
+  const n = parseFloat(s.replace(/[^\d.\-]/g, ''));
+  return isNaN(n) ? 0 : n;
+}
+
+function normalizeDate(s) {
+  if (!s) return '';
+  s = String(s).trim();
+  s = s.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+  s = s.replace(/-/g, '/');
+  const m = s.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+  if (m) return m[1] + '/' + String(m[2]).padStart(2, '0') + '/' + String(m[3]).padStart(2, '0');
+  return '';
+}
+
+function convert() {
+  if (!workbookData) return;
+  
+  const result = {
+    _m: {app: 'Adineh', ver: '1.5', type: 'excel-import', date: new Date().toISOString()},
+    flocks: [],
+    dailyLog: [],
+    devices: [],
+    ingredients: []
+  };
+  
+  let report = [];
+  
+  // ===== شیت گله قدیم =====
+  if (workbookData.Sheets['گله قدیم']) {
+    const rows = XLSX.utils.sheet_to_json(workbookData.Sheets['گله قدیم'], {header: 1});
+    if (rows.length >= 2) {
+      const header = rows[0].map(h => cleanCell(h));
+      const cDate = header.findIndex(h => h.includes('تاریخ'));
+      const cDeaths = header.findIndex(h => h.includes('تلفات'));
+      const cNotes = header.findIndex(h => h.includes('مشاهدات') || h.includes('شرح'));
+      const cTreat = header.findIndex(h => h.includes('درمان') || h.includes('تدابیر'));
+      
+      let count = 0;
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r) continue;
+        const dateStr = normalizeDate(cleanCell(r[cDate]));
+        if (!dateStr) continue;
+        result.dailyLog.push({
+          date: dateStr,
+          flock: 'گله قدیم',
+          deaths: cDeaths >= 0 ? parseNum(r[cDeaths]) : 0,
+          eggs: 0, broken: 0, dirty: 0, feed: 0, water: 0,
+          weight: 0, temp: '', humidity: '', lossCause: '', medicineCost: 0,
+          notes: cNotes >= 0 ? cleanCell(r[cNotes]) : '',
+          treatment: cTreat >= 0 ? cleanCell(r[cTreat]) : ''
+        });
+        count++;
+      }
+      report.push('✅ گله قدیم: ' + count + ' رکورد روزانه');
+    }
+  }
+  
+  // ===== شیت گله جدید =====
+  if (workbookData.Sheets['گله جدید']) {
+    const rows = XLSX.utils.sheet_to_json(workbookData.Sheets['گله جدید'], {header: 1});
+    if (rows.length >= 2) {
+      const header = rows[0].map(h => cleanCell(h));
+      const cDate = header.findIndex(h => h.includes('تاریخ'));
+      const cDeaths = header.findIndex(h => h.includes('تلفات'));
+      const cNotes = header.findIndex(h => h.includes('مشاهدات') || h.includes('شرح'));
+      const cTreat = header.findIndex(h => h.includes('درمان') || h.includes('دارو'));
+      
+      let count = 0;
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r) continue;
+        const dateStr = normalizeDate(cleanCell(r[cDate]));
+        if (!dateStr) continue;
+        result.dailyLog.push({
+          date: dateStr,
+          flock: 'گله جدید',
+          deaths: cDeaths >= 0 ? parseNum(r[cDeaths]) : 0,
+          eggs: 0, broken: 0, dirty: 0, feed: 0, water: 0,
+          weight: 0, temp: '', humidity: '', lossCause: '', medicineCost: 0,
+          notes: cNotes >= 0 ? cleanCell(r[cNotes]) : '',
+          treatment: cTreat >= 0 ? cleanCell(r[cTreat]) : ''
+        });
+        count++;
+      }
+      report.push('✅ گله جدید: ' + count + ' رکورد روزانه');
+    }
+  }
+  
+  // ===== شیت اطلاعات اولیه (گله‌ها) =====
+  if (workbookData.Sheets['اطلاعات اولیه']) {
+    const rows = XLSX.utils.sheet_to_json(workbookData.Sheets['اطلاعات اولیه'], {header: 1});
+    if (rows.length >= 2) {
+      const r = rows[1];
+      const oldCount = parseNum(r[0]);
+      const oldHatch = normalizeDate(cleanCell(r[1]));
+      const newCount = parseNum(r[2]);
+      const newHatch = normalizeDate(cleanCell(r[3]));
+      
+      if (oldCount > 0) {
+        result.flocks.push({
+          name: 'گله قدیم',
+          hatch: oldHatch || '1405/05/03',
+          count: oldCount,
+          color: '#f59e0b',
+          groupId: null,
+          customChickPrice: 0, customFeedPrice: 0, customTransportCost: 0
+        });
+      }
+      if (newCount > 0) {
+        result.flocks.push({
+          name: 'گله جدید',
+          hatch: newHatch || '1405/06/01',
+          count: newCount,
+          color: '#3b82f6',
+          groupId: null,
+          customChickPrice: 0, customFeedPrice: 0, customTransportCost: 0
+        });
+      }
+      if (result.flocks.length > 0) report.push('✅ گله‌ها: ' + result.flocks.length);
+    }
+  }
+  
+  // ===== شیت دستگاه جوجه کشی =====
+  if (workbookData.Sheets['دستگاه جوجه کشی']) {
+    const rows = XLSX.utils.sheet_to_json(workbookData.Sheets['دستگاه جوجه کشی'], {header: 1});
+    if (rows.length >= 2) {
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r) continue;
+        const name = cleanCell(r[0]);
+        const capacity = parseNum(r[3]);
+        if (!name) continue;
+        result.devices.push({ name: name, capacity: capacity || 500 });
+      }
+      if (result.devices.length > 0) report.push('✅ دستگاه‌ها: ' + result.devices.length);
+    }
+  }
+  
+  // ===== شیت آمار جیره =====
+  if (workbookData.Sheets['آمار جیره']) {
+    const rows = XLSX.utils.sheet_to_json(workbookData.Sheets['آمار جیره'], {header: 1});
+    if (rows.length >= 2) {
+      const header = rows[0].map(h => cleanCell(h));
+      const cName = header.findIndex(h => h.includes('اقلام') || h.includes('خوراکی'));
+      const cPct = header.findIndex(h => h.includes('درصد'));
+      const cPrice = header.findIndex(h => h.includes('قیمت هر کیلو'));
+      
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r) continue;
+        const name = cleanCell(r[cName]);
+        if (!name || name.includes('مجموع') || name.includes('خطا')) continue;
+        const pct = cPct >= 0 ? parseNum(r[cPct]) : 0;
+        const price = cPrice >= 0 ? parseNum(r[cPrice]) : 0;
+        if (!name || pct <= 0) continue;
+        result.ingredients.push({ name: name, pct: pct, price: price });
+      }
+      if (result.ingredients.length > 0) report.push('✅ اقلام جیره: ' + result.ingredients.length);
+    }
+  }
+  
+  if (report.length === 0) {
+    document.getElementById('result').innerHTML = 
+      '<div class="error info">⚠️ داده‌ای برای تبدیل پیدا نشد<br><br>شیت‌های موجود:<br>' + workbookData.SheetNames.join('<br>') + '</div>';
+    return;
+  }
+  
+  // ===== دانلود JSON =====
+  const blob = new Blob([JSON.stringify(result, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'adineh-import.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  document.getElementById('result').innerHTML = 
+    '<div class="success info">' + report.join('<br>') + '<br><br>' +
+    '<b>📥 فایل adineh-import.json دانلود شد</b><br><br>' +
+    'حالا توی آدینه:<br>' +
+    '⚙️ تنظیمات → 💾 پشتیبان‌گیری → 📤 بازیابی از فایل<br>' +
+    'و فایل JSON رو انتخاب کن.</div>';
+}
+</script>
+
+</body>
+</html>
