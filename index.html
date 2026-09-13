@@ -246,9 +246,12 @@ body.dark .spectrum-mask{background:rgba(0,0,0,.65)}
 input[type="range"]{-webkit-appearance:none;appearance:none;background:var(--border);border-radius:3px;height:6px;outline:none}
 input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:var(--primary);cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.2)}
 input[type="range"]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--primary);cursor:pointer;border:none;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.card-dragging{transform:scale(1.03);box-shadow:0 8px 28px rgba(15,118,110,.5);border:2px solid var(--primary);opacity:.92;z-index:10;position:relative;transition:transform .15s,box-shadow .15s}
+.card[data-drag-card]{transition:transform .2s,box-shadow .2s}
 </style>
 </head>
 <body>
+
 <div class="splash" id="splash"><div class="si">🐔</div><div class="st">مدیریت مرغداری</div><div class="ss">آدینه — نسخه ۱.۶</div></div>
 
 <div class="header">
@@ -261,7 +264,6 @@ input[type="range"]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;b
     <button class="h-btn" onclick="openSettings()">⚙️</button>
   </div>
 </div>
-
 <div class="wrap">
 <div class="page active" id="p-dashboard">
   <div class="stats">
@@ -737,11 +739,166 @@ function renderDashboardCards(){
     else if(id==='month')body='<div id="monthBox"></div>';
     else if(id==='alerts')body='<div id="alertsBox"></div>';
     const collapsed=uiState[id]?'collapsed':'';
-    html+=`<div class="card ${collapsed}" data-c="${id}"><div class="card-h"><div class="card-t" onclick="toggleCard('${id}')"><span class="emoji">${ci.title.split(' ')[0]}</span> ${ci.title.split(' ').slice(1).join(' ')}</div><div class="card-actions"><button class="toggle" onclick="toggleCard('${id}')">▼</button></div></div><div class="card-b">${body}</div></div>`;
+    html+=`<div class="card ${collapsed}" data-c="${id}" data-drag-card="${id}"><div class="card-h"><div class="card-t" data-card-t="${id}"><span class="emoji">${ci.title.split(' ')[0]}</span> ${ci.title.split(' ').slice(1).join(' ')}</div><div class="card-actions"><button class="toggle" onclick="toggleCard('${id}')">▼</button></div></div><div class="card-b">${body}</div></div>`;
   });
   container.innerHTML=html;
   applyUIState();
+  setTimeout(attachCardDragEvents,50);
 }
+
+/* ═══ DRAG & DROP DASHBOARD CARDS ═══ */
+let cardDragState={active:false,cardId:null,startX:0,startY:0,lastTargetId:null,timer:null,justDragged:false};
+
+function attachCardDragEvents(){
+  const container=$('dashboardCardsContainer');
+  if(!container)return;
+  if(container._dragBound)return;
+  container._dragBound=true;
+  container.addEventListener('touchstart',handleCardTouchStart,{passive:true});
+  container.addEventListener('touchmove',handleCardTouchMove,{passive:false});
+  container.addEventListener('touchend',handleCardTouchEnd);
+  container.addEventListener('touchcancel',handleCardTouchEnd);
+  container.addEventListener('mousedown',handleCardMouseDown);
+}
+
+function handleCardTouchStart(e){
+  const title=e.target.closest('.card-t');
+  if(!title)return;
+  if(e.target.closest('.card-actions'))return;
+  const cardId=title.dataset.cardT;
+  if(!cardId)return;
+  const t=e.touches[0];
+  cardDragState.startX=t.clientX;
+  cardDragState.startY=t.clientY;
+  cardDragState.cardId=cardId;
+  cardDragState.active=false;
+  cardDragState.lastTargetId=null;
+  cardDragState.justDragged=false;
+  cardDragState.timer=setTimeout(()=>{
+    cardDragState.active=true;
+    cardDragState.justDragged=true;
+    const el=document.querySelector(`.card[data-drag-card="${cardDragState.cardId}"]`);
+    if(el)el.classList.add('card-dragging');
+    if(navigator.vibrate)navigator.vibrate(50);
+    toast('🔄 حالا جابجا کنید');
+  },800);
+}
+
+function handleCardTouchMove(e){
+  const t=e.touches[0];
+  if(!cardDragState.active){
+    const dx=Math.abs(t.clientX-cardDragState.startX);
+    const dy=Math.abs(t.clientY-cardDragState.startY);
+    if(dx>10||dy>10){clearTimeout(cardDragState.timer);cardDragState.timer=null;}
+    return;
+  }
+  e.preventDefault();
+  const element=document.elementFromPoint(t.clientX,t.clientY);
+  const targetCard=element?element.closest('.card[data-drag-card]'):null;
+  if(targetCard){
+    const targetId=targetCard.dataset.dragCard;
+    if(targetId!==cardDragState.cardId && targetId!==cardDragState.lastTargetId){
+      cardDragState.lastTargetId=targetId;
+      swapDashboardCards(cardDragState.cardId,targetId);
+    }
+  }
+}
+
+function handleCardTouchEnd(e){
+  if(cardDragState.timer){clearTimeout(cardDragState.timer);cardDragState.timer=null;}
+  if(cardDragState.active){
+    document.querySelectorAll('.card-dragging').forEach(c=>c.classList.remove('card-dragging'));
+    cardDragState.active=false;
+    if(navigator.vibrate)navigator.vibrate(30);
+    toast('✅ ذخیره شد');
+    setTimeout(()=>{cardDragState.justDragged=false;},300);
+  }
+  cardDragState.cardId=null;
+  cardDragState.lastTargetId=null;
+}
+
+function swapDashboardCards(fromId,toId){
+  if(!uiState.dashboardOrder)uiState.dashboardOrder=DASHBOARD_CARDS.map(c=>c.id);
+  const order=[...uiState.dashboardOrder];
+  const fromIdx=order.indexOf(fromId);
+  const toIdx=order.indexOf(toId);
+  if(fromIdx<0||toIdx<0)return;
+  [order[fromIdx],order[toIdx]]=[order[toIdx],order[fromIdx]];
+  uiState.dashboardOrder=order;
+  saveUIState();
+  renderDashboardCards();
+  const el=document.querySelector(`.card[data-drag-card="${fromId}"]`);
+  if(el)el.classList.add('card-dragging');
+}
+
+function handleCardMouseDown(e){
+  const title=e.target.closest('.card-t');
+  if(!title)return;
+  if(e.target.closest('.card-actions'))return;
+  const cardId=title.dataset.cardT;
+  if(!cardId)return;
+  cardDragState.startX=e.clientX;
+  cardDragState.startY=e.clientY;
+  cardDragState.cardId=cardId;
+  cardDragState.active=false;
+  cardDragState.lastTargetId=null;
+  cardDragState.justDragged=false;
+  cardDragState.timer=setTimeout(()=>{
+    cardDragState.active=true;
+    cardDragState.justDragged=true;
+    const el=document.querySelector(`.card[data-drag-card="${cardDragState.cardId}"]`);
+    if(el)el.classList.add('card-dragging');
+    toast('🔄 حالا جابجا کنید');
+  },800);
+  document.addEventListener('mousemove',handleCardMouseMove);
+  document.addEventListener('mouseup',handleCardMouseUp);
+}
+
+function handleCardMouseMove(e){
+  if(!cardDragState.active){
+    const dx=Math.abs(e.clientX-cardDragState.startX);
+    const dy=Math.abs(e.clientY-cardDragState.startY);
+    if(dx>10||dy>10){clearTimeout(cardDragState.timer);cardDragState.timer=null;}
+    return;
+  }
+  e.preventDefault();
+  const element=document.elementFromPoint(e.clientX,e.clientY);
+  const targetCard=element?element.closest('.card[data-drag-card]'):null;
+  if(targetCard){
+    const targetId=targetCard.dataset.dragCard;
+    if(targetId!==cardDragState.cardId && targetId!==cardDragState.lastTargetId){
+      cardDragState.lastTargetId=targetId;
+      swapDashboardCards(cardDragState.cardId,targetId);
+    }
+  }
+}
+
+function handleCardMouseUp(e){
+  if(cardDragState.timer){clearTimeout(cardDragState.timer);cardDragState.timer=null;}
+  if(cardDragState.active){
+    document.querySelectorAll('.card-dragging').forEach(c=>c.classList.remove('card-dragging'));
+    cardDragState.active=false;
+    toast('✅ ذخیره شد');
+    setTimeout(()=>{cardDragState.justDragged=false;},300);
+  }
+  document.removeEventListener('mousemove',handleCardMouseMove);
+  document.removeEventListener('mouseup',handleCardMouseUp);
+  cardDragState.cardId=null;
+  cardDragState.lastTargetId=null;
+}
+
+document.addEventListener('click',function(e){
+  const title=e.target.closest('.card-t');
+  if(!title)return;
+  if(e.target.closest('.card-actions'))return;
+  if(cardDragState.justDragged){
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  }
+  const cardId=title.dataset.cardT;
+  if(cardId)toggleCard(cardId);
+});
 
 const pTitles={dashboard:'داشبورد',daily:'ثبت روزانه',vaccines:'دارو و واکسن',inventory:'انبار',feed:'خوراک',flocks:'گله‌ها',sales:'فروش',finance:'مالی',incubation:'جوجه‌کشی',reminders:'یادآورها',photos:'عکس‌ها',standards:'استانداردها'};
 function showPage(n,btn){
@@ -917,6 +1074,7 @@ function drawMainChart(){
   if(chartRange===14){const sl=daily.slice(-14);labels=sl.map(d=>d.date.slice(5));eggs=sl.map(d=>(+d.eggs||0)+(+d.broken||0)+(+d.dirty||0));deaths=sl.map(d=>+d.deaths||0);feed=sl.map(d=>+d.feed||0);}
   else if(chartRange==='week'){for(let i=7;i>=0;i--){const end=todayC-i*7,start=end-6;let e=0,dd=0,f=0;for(let j=0;j<daily.length;j++){const c=jToC(daily[j].date);if(c>=start&&c<=end){e+=(+daily[j].eggs||0)+(+daily[j].broken||0)+(+daily[j].dirty||0);dd+=(+daily[j].deaths||0);f+=(+daily[j].feed||0);}}labels.push(`ه${8-i}`);eggs.push(e);deaths.push(dd);feed.push(f);}}
   else{for(let i=5;i>=0;i--){let m=jM(today)-i,y=jY(today);while(m<1){m+=12;y-=1;}let e=0,dd=0,f=0;for(let j=0;j<daily.length;j++){const d=daily[j];if(jM(d.date)===m&&jY(d.date)===y){e+=(+d.eggs||0)+(+d.broken||0)+(+d.dirty||0);dd+=(+d.deaths||0);f+=(+d.feed||0);}}labels.push(MONTHS[m-1].slice(0,3));eggs.push(e);deaths.push(dd);feed.push(f);}}
+  if(typeof Chart==='undefined'){console.warn('Chart.js نیست');const cs=$('chartStats');if(cs)cs.innerHTML='<div class="alert y">📊 Chart.js لود نشد</div>';return;}
   if(chartType==='doughnut'){
     const tE=eggs.reduce((s,x)=>s+x,0),tD=deaths.reduce((s,x)=>s+x,0),tF=feed.reduce((s,x)=>s+x,0);
     mainChart=new Chart(ctx,{type:'doughnut',data:{labels:['🥚 تخم','💀 تلفات','🌾 خوراک'],datasets:[{data:[tE,tD,tF],backgroundColor:['#3b82f6','#ef4444','#f59e0b']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'Tahoma',size:11}}}}}});
@@ -1768,6 +1926,9 @@ function renderSettingsHelp(){
     <p><strong>۳ حالت تم:</strong> روشن، تیره، خودکار (طبق تنظیمات گوشی)</p>
     <p><strong>فونت:</strong> غربیلک برای تنظیم سایز بین ۱۱ تا ۲۰ پیکسل</p>
   </div></details>
+  <details class="help-d"><summary class="help-s">🔄 جابجایی کارت‌های داشبورد</summary><div class="help-c">
+    <p>روی عنوان هر کارت (مثل «📈 نمودار عملکرد») حدود یک ثانیه نگه دار، بعد انگشتت رو بکش روی کارتی که می‌خوای جاش عوض بشه. ترتیب جدید خودکار ذخیره میشه.</p>
+  </div></details>
   <details class="help-d"><summary class="help-s">☁️ همگام‌سازی ابری</summary><div class="help-c">
     <p><strong>۱. اشتراک‌گذاری:</strong> دکمه 📤 → Google Drive، Telegram، WhatsApp یا Email</p>
     <p><strong>۲. پوشه خودکار:</strong> 📁 انتخاب پوشه → مثلاً Google Drive/Adineh → خودکار هر ۵ دقیقه</p>
@@ -1834,7 +1995,7 @@ function importExcel(){
       const cD=find('تاریخ','date'),cF=find('گله','flock'),cDe=find('تلفات','deaths'),cE=find('تخم','eggs'),cB=find('شکسته','broken'),cDi=find('کثیف','dirty'),cFe=find('خوراک','feed'),cW=find('آب','water'),cT=find('دما','temp'),cH=find('رطوبت','humidity'),cN=find('مشاهدات','notes'),cWe=find('وزن','weight'),cLc=find('علت','cause');
       if(cD<0||cF<0){toast('❌ تاریخ/گله');return;}
       let n=0;
-      for(let i=1;i<rows.length;i++){const r=rows[i];if(!r||!r[cD])continue;const item={date:String(r[cD]).replace(/-/g,'/').trim(),flock:String(r[cF]||'').trim(),deaths:+r[cDe]||0,eggs:+r[cE]||0,broken:cB>=0?+r[cB]||0:0,dirty:cDi>=0?+r[cDi]||0:0,feed:+r[cFe]||0,water:+r[cW]||0,temp:cT>=0?String(r[cT]||''):'',humidity:cH>=0?String(r[cH]||''):'',notes:cN>=0?String(r[cN]||''):'',weight:+r[cWe]||0,lossCause:cLc>=0?String(r[cLc]||''):''};if(!item.flock)continue;await dbPut('dailyLog',item);n++;} 
+      for(let i=1;i<rows.length;i++){const r=rows[i];if(!r||!r[cD])continue;const item={date:String(r[cD]).replace(/-/g,'/').trim(),flock:String(r[cF]||'').trim(),deaths:+r[cDe]||0,eggs:+r[cE]||0,broken:cB>=0?+r[cB]||0:0,dirty:cDi>=0?+r[cDi]||0:0,feed:+r[cFe]||0,water:+r[cW]||0,temp:cT>=0?String(r[cT]||''):'',humidity:cH>=0?String(r[cH]||''):'',notes:cN>=0?String(r[cN]||''):'',weight:+r[cWe]||0,lossCause:cLc>=0?String(r[cLc]||''):''};if(!item.flock)continue;await dbPut('dailyLog',item);n++;}
       dailyLog=await dbAll('dailyLog');invalidateCache();autoBackupToLocal();closeModal();toast(`✅ ${n} رکورد`);
     }catch(err){console.error(err);toast('❌ '+err.message);}
   };input.click();
