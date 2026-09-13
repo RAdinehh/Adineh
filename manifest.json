@@ -1,0 +1,22 @@
+{
+  "name": "آدینه - مدیریت مرغداری",
+  "short_name": "آدینه",
+  "description": "مدیریت جوجه‌کشی و مرغداری",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f766e",
+  "theme_color": "#0f766e",
+  "lang": "fa",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0iIzBmNzY2ZSIvPjx0ZXh0IHg9IjI1NiIgeT0iNDAwIiBmb250LXNpemU9IjM0MCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+8J+QlTwvdGV4dD48L3N2Zz4=",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"]
+}
