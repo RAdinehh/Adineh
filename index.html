@@ -17,9 +17,9 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-:root{--bg:#f5f7fa;--card:#fff;--soft:#f0f4f8;--text:#1a2332;--muted:#64748b;--border:#e5e9f0;--primary:#0f766e;--primary-2:#0d9488;--primary-light:#f0fdf4;--danger:#dc2626;--warning:#f59e0b;--success:#16a34a;--info:#2563eb;--purple:#9333ea;--radius:14px}
+:root{--bg:#f5f7fa;--card:#fff;--soft:#f0f4f8;--text:#1a2332;--muted:#64748b;--border:#e5e9f0;--primary:#0f766e;--primary-2:#0d9488;--primary-light:#f0fdf4;--danger:#dc2626;--warning:#f59e0b;--success:#16a34a;--info:#2563eb;--purple:#9333ea;--radius:14px;--base-font:14px}
 body.dark{--bg:#0f172a;--card:#1e293b;--soft:#334155;--text:#f1f5f9;--muted:#94a3b8;--border:#334155;--primary:#2dd4bf;--primary-2:#14b8a6;--primary-light:#134e4a}
-body{font-family:Tahoma,sans-serif;background:var(--bg);color:var(--text);padding-bottom:74px;font-size:14px;line-height:1.6;overscroll-behavior-y:contain}
+body{font-family:Tahoma,sans-serif;background:var(--bg);color:var(--text);padding-bottom:74px;font-size:var(--base-font);line-height:1.6;overscroll-behavior-y:contain}
 .header{background:linear-gradient(135deg,var(--primary),var(--primary-2));color:#fff;padding:12px 16px;padding-top:max(12px,env(safe-area-inset-top));position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.08);display:flex;justify-content:space-between;align-items:center}
 .header h1{font-size:15px;font-weight:800}
 .header .sub{font-size:11px;opacity:.85;margin-top:2px}
@@ -243,11 +243,14 @@ body.dark .spectrum-mask{background:rgba(0,0,0,.65)}
 .backup-stat .bs-value.ok{color:var(--success)}
 .backup-stat .bs-value.warn{color:var(--warning)}
 .backup-stat .bs-value.danger{color:var(--danger)}
+input[type="range"]{-webkit-appearance:none;appearance:none;background:var(--border);border-radius:3px;height:6px;outline:none}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:var(--primary);cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+input[type="range"]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--primary);cursor:pointer;border:none;box-shadow:0 2px 6px rgba(0,0,0,.2)}
 </style>
 </head>
 <body>
 
-<div class="splash" id="splash"><div class="si">🐔</div><div class="st">مدیریت مرغداری</div><div class="ss">آدینه — نسخه ۱.۵</div></div>
+<div class="splash" id="splash"><div class="si">🐔</div><div class="st">مدیریت مرغداری</div><div class="ss">آدینه — نسخه ۱.۶</div></div>
 
 <div class="header">
   <div><h1 id="pTitle">داشبورد</h1><div class="sub" id="pDate">...</div></div>
@@ -376,9 +379,6 @@ function dbDel(s,k){return new Promise(r=>{try{const tx=db.transaction(s,'readwr
 function dbClear(s){return new Promise(r=>{try{const tx=db.transaction(s,'readwrite');tx.oncomplete=()=>r();tx.onerror=()=>r();tx.onabort=()=>r();tx.objectStore(s).clear();}catch(e){r();}});}
 function dbGet(s,k){return new Promise(r=>{try{const q=db.transaction(s,'readonly').objectStore(s).get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>r(null);}catch(e){r(null);}});}
 
-/* ============================================================
-   AUTO-BACKUP خودکار به localStorage
-   ============================================================ */
 const AUTOBACKUP_KEY='adineh_autobackup_v1';
 const AUTOBACKUP_TIME_KEY='adineh_autobackup_time_v1';
 const AUTOBACKUP_MAX_AGE=7*24*60*60*1000;
@@ -389,7 +389,7 @@ function autoBackupToLocal(){
     autoSaveToFolder().catch(()=>{});
   }
   try{
-    const data={_ts:Date.now(),_ver:'1.5',settings,dailyLog,incubation,sales,reminders,devices,birds,flocks,groups,ingredients,standards,finances,vaccines,inventory,vaxSchedules,lossCauses,uiState,theme:{name:theme}};
+    const data={_ts:Date.now(),_ver:'1.6',settings,dailyLog,incubation,sales,reminders,devices,birds,flocks,groups,ingredients,standards,finances,vaccines,inventory,vaxSchedules,lossCauses,uiState,theme:{name:theme}};
     let json=JSON.stringify(data);
     if(json.length>4*1024*1024){data.photos=[];json=JSON.stringify(data);}
     if(json.length>4*1024*1024){const essentials={_ts:data._ts,_ver:data._ver,settings,dailyLog,incubation,sales,birds,flocks,groups,lossCauses};json=JSON.stringify(essentials);}
@@ -436,11 +436,7 @@ function getAutoBackupInfo(){
 }
 function clearAutoBackup(){try{localStorage.removeItem(AUTOBACKUP_KEY);localStorage.removeItem(AUTOBACKUP_TIME_KEY);return true;}catch(e){return false;}}
 function formatBytes(b){if(b<1024)return b+' B';if(b<1024*1024)return (b/1024).toFixed(1)+' KB';return (b/1024/1024).toFixed(2)+' MB';}
-function formatAge(ms){if(ms<60000)return 'همین الان';if(ms<3600000)return fa(Math.floor(ms/60000))+' دقیقه پیش';if(ms<86400000)return fa(Math.floor(ms/3600000))+' ساعت پیش';return fa(Math.floor(ms/86400000))+' روز پیش';}
 
-/* ============================================================
-   PWA + Cloud Sync
-   ============================================================ */
 let deferredPrompt=null;
 let autoSaveFolderHandle=null;
 
@@ -466,7 +462,7 @@ async function installPWA(){
   if(!deferredPrompt){
     showDialog({
       icon:'📱',title:'نصب آدینه روی گوشی',
-      message:'<b>در Chrome:</b><br>1️⃣ منوی ⋮ (سه نقطه) را بزن<br>2️⃣ «افزودن به صفحه اصلی» یا «نصب برنامه»<br>3️⃣ تأیید کن<br><br><b>در Safari (آیفون):</b><br>1️⃣ دکمه اشتراک‌گذاری ⬆️ را بزن<br>2️⃣ «Add to Home Screen» را انتخاب کن',
+      message:'<b>در Chrome:</b><br>1️⃣ منوی ⋮ را بزن<br>2️⃣ «افزودن به صفحه اصلی» یا «نصب برنامه»<br>3️⃣ تأیید کن',
       actions:[{text:'باشه',type:'primary',onClick:closeDialog}]
     });
     return;
@@ -479,10 +475,9 @@ async function installPWA(){
 
 function isStandalone(){return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;}
 
-/* ===== اشتراک‌گذاری ابری ===== */
 async function shareBackupToCloud(){
   try{
-    const data={_m:{app:'Adineh',ver:'1.5',date:today,time:Date.now(),type:'cloud'},settings,dailyLog,incubation,sales,reminders,photos,devices,birds,flocks,groups,ingredients,standards,finances,vaccines,inventory,vaxSchedules,lossCauses,uiState,theme:{name:theme}};
+    const data={_m:{app:'Adineh',ver:'1.6',date:today,time:Date.now(),type:'cloud'},settings,dailyLog,incubation,sales,reminders,photos,devices,birds,flocks,groups,ingredients,standards,finances,vaccines,inventory,vaxSchedules,lossCauses,uiState,theme:{name:theme}};
     const json=JSON.stringify(data,null,2);
     const filename=`adineh-${today.replace(/\//g,'-')}.json`;
     const file=new File([json],filename,{type:'application/json'});
@@ -502,7 +497,6 @@ async function shareBackupToCloud(){
   }
 }
 
-/* ===== ذخیره در پوشه ===== */
 async function setupAutoSaveFolder(){
   if(!window.showDirectoryPicker){
     showDialog({icon:'❌',title:'پشتیبانی نمی‌شود',message:'مرورگر تو از این قابلیت پشتیبانی نمی‌کند.<br><br>از «اشتراک‌گذاری ابری» استفاده کن.',actions:[{text:'باشه',type:'primary',onClick:closeDialog}]});
@@ -515,7 +509,6 @@ async function setupAutoSaveFolder(){
     settings.autoSaveFolderSet=true;
     settings.id=1;
     await dbPut('settings',settings);
-    // ذخیره اول
     await autoSaveToFolder();
     toast('✅ پوشه «'+handle.name+'» تنظیم شد');
     settingsView='backup';renderSettingsModal();
@@ -527,7 +520,7 @@ async function setupAutoSaveFolder(){
 async function autoSaveToFolder(){
   if(!autoSaveFolderHandle)return false;
   try{
-    const data={_m:{app:'Adineh',ver:'1.5',date:today,time:Date.now(),type:'auto'},settings,dailyLog,incubation,sales,reminders,devices,birds,flocks,groups,ingredients,standards,finances,vaccines,inventory,vaxSchedules,lossCauses,uiState,theme:{name:theme}};
+    const data={_m:{app:'Adineh',ver:'1.6',date:today,time:Date.now(),type:'auto'},settings,dailyLog,incubation,sales,reminders,devices,birds,flocks,groups,ingredients,standards,finances,vaccines,inventory,vaxSchedules,lossCauses,uiState,theme:{name:theme}};
     const json=JSON.stringify(data,null,2);
     const fileHandle=await autoSaveFolderHandle.getFileHandle('adineh-autosave.json',{create:true});
     const writable=await fileHandle.createWritable();
@@ -542,10 +535,7 @@ async function autoSaveToFolder(){
 }
 
 async function saveToFolderNow(){
-  if(!autoSaveFolderHandle){
-    toast('⚠️ اول پوشه را انتخاب کن');
-    return;
-  }
+  if(!autoSaveFolderHandle){toast('⚠️ اول پوشه را انتخاب کن');return;}
   const ok=await autoSaveToFolder();
   if(ok){
     toast('✅ در پوشه ذخیره شد');
@@ -553,9 +543,7 @@ async function saveToFolderNow(){
     settings.lastCloudBackupTime=Date.now();
     await dbPut('settings',{...settings,id:1});
     settingsView='backup';renderSettingsModal();
-  }else{
-    toast('❌ خطا در ذخیره');
-  }
+  }else{toast('❌ خطا در ذخیره');}
 }
 
 async function loadFromFolder(){
@@ -566,34 +554,20 @@ async function loadFromFolder(){
     const file=await fileHandle.getFile();
     const text=await file.text();
     const data=JSON.parse(text);
-    showDialog({
-      icon:'📂',title:'بارگذاری از پوشه',
-      message:`فایل: <b>adineh-autosave.json</b><br>تاریخ: ${data._m?.date||'—'}<br><br>⚠️ اطلاعات به برنامه اضافه می‌شود.`,
-      actions:[
-        {text:'انصراف',type:'secondary',onClick:closeDialog},
-        {text:'✅ بارگذاری',type:'success',onClick:async()=>{
-          if(data.settings){data.settings.id=1;await dbPut('settings',data.settings);}
-          for(const s of ['dailyLog','incubation','sales','reminders','devices','birds','flocks','groups','ingredients','standards','finances','vaccines','inventory','vaxSchedules','lossCauses']){
-            if(Array.isArray(data[s]))for(const x of data[s]){delete x.id;await dbPut(s,x);}
-          }
-          if(Array.isArray(data.photos))for(const x of data.photos){delete x.id;await dbPut('photos',x);}
-          if(data.uiState){uiState=data.uiState;await saveUIState();}
-          if(data.theme?.name)await saveTheme(data.theme.name);
-          await loadAll();invalidateCache();autoBackupToLocal();
-          closeDialog();closeModal();
-          toast('✅ بارگذاری شد');
-          rAF(()=>renderPage('dashboard'));
-        }}
-      ]
-    });
+    showDialog({icon:'📂',title:'بارگذاری از پوشه',message:`فایل: <b>adineh-autosave.json</b><br>تاریخ: ${data._m?.date||'—'}<br><br>⚠️ اطلاعات به برنامه اضافه می‌شود.`,
+      actions:[{text:'انصراف',type:'secondary',onClick:closeDialog},{text:'✅ بارگذاری',type:'success',onClick:async()=>{
+        if(data.settings){data.settings.id=1;await dbPut('settings',data.settings);}
+        for(const s of ['dailyLog','incubation','sales','reminders','devices','birds','flocks','groups','ingredients','standards','finances','vaccines','inventory','vaxSchedules','lossCauses']){if(Array.isArray(data[s]))for(const x of data[s]){delete x.id;await dbPut(s,x);}}
+        if(Array.isArray(data.photos))for(const x of data.photos){delete x.id;await dbPut('photos',x);}
+        if(data.uiState){uiState=data.uiState;await saveUIState();}
+        if(data.theme?.name)await saveTheme(data.theme.name);
+        await loadAll();invalidateCache();autoBackupToLocal();closeDialog();closeModal();toast('✅ بارگذاری شد');rAF(()=>renderPage('dashboard'));
+      }}]});
   }catch(err){
-    if(err.name!=='AbortError'){console.error(err);toast('❌ فایل پیدا نشد یا خطا');}
+    if(err.name!=='AbortError'){console.error(err);toast('❌ فایل پیدا نشد');}
   }
 }
 
-/* ============================================================
-   HELPERS
-   ============================================================ */
 let settings={},dailyLog=[],incubation=[],sales=[],reminders=[],photos=[],devices=[],birds=[],flocks=[],groups=[],ingredients=[],standards=[],finances=[],vaccines=[],inventory=[],vaxSchedules=[],lossCauses=[],backupLog=[];
 let uiState={},theme='light',dailyTab='all',chartRange=14,chartType='line',dailyShown=30;
 let cacheDirty=true,cacheDaily=null,currentPage='dashboard';
@@ -670,8 +644,49 @@ function closeDialog(){$('dialog').classList.remove('on');}
 function askSave(message,cb){showDialog({icon:'💾',title:'ذخیره اطلاعات؟',message:message||'آیا اطلاعات ذخیره شود؟',actions:[{text:'انصراف',type:'secondary',onClick:closeDialog},{text:'💾 ذخیره',type:'success',onClick:cb}]});}
 function askDelete(itemName,cb){showDialog({icon:'🗑️',title:'حذف شود؟',message:`آیا از حذف <b>"${itemName}"</b> مطمئن هستید؟`,actions:[{text:'انصراف',type:'secondary',onClick:closeDialog},{text:'🗑️ حذف',type:'danger',onClick:cb}]});}
 
-async function loadTheme(){const t=await dbGet('theme',1);if(t&&t.name)theme=t.name;document.body.classList.toggle('dark',theme==='dark');}
-async function saveTheme(n){theme=n;await dbPut('theme',{id:1,name:n});document.body.classList.toggle('dark',n==='dark');toast('🎨');renderSettingsModal();}
+/* ═══ THEME ═══ */
+let systemThemeListener=null;
+async function loadTheme(){
+  const t=await dbGet('theme',1);
+  if(t&&t.name)theme=t.name;
+  applyTheme(theme);
+  if(theme==='auto'){
+    if(!systemThemeListener){
+      systemThemeListener=window.matchMedia('(prefers-color-scheme: dark)');
+      systemThemeListener.addEventListener('change',()=>{
+        if(theme==='auto') applyTheme('auto');
+      });
+    }
+  }
+}
+function applyTheme(t){
+  let isDark=false;
+  if(t==='dark') isDark=true;
+  else if(t==='auto') isDark=window.matchMedia('(prefers-color-scheme: dark)').matches;
+  document.body.classList.toggle('dark',isDark);
+  const meta=document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.setAttribute('content',isDark?'#0f172a':'#0f766e');
+}
+async function saveTheme(n){
+  theme=n;
+  await dbPut('theme',{id:1,name:n});
+  applyTheme(n);
+  toast(n==='light'?'☀️ روشن':n==='dark'?'🌙 تیره':'🔄 خودکار');
+  renderSettingsModal();
+}
+async function applyFontSize(size){
+  size=Math.max(11,Math.min(20,size));
+  document.documentElement.style.setProperty('--base-font', size+'px');
+  settings.fontSize=size;
+  settings.id=1;
+  await dbPut('settings',settings);
+}
+async function changeFontSize(val){
+  await applyFontSize(+val);
+  const lbl=$('fontSizeLbl');
+  if(lbl) lbl.textContent=fa(+val)+'px';
+}
+
 async function loadUIState(){const s=await dbGet('uiState',1);if(s&&s.data)uiState=s.data;}
 async function saveUIState(){try{await dbPut('uiState',{id:1,data:uiState});}catch(e){}}
 function toggleCard(id){const c=document.querySelector(`.card[data-c="${id}"]`);if(!c)return;c.classList.toggle('collapsed');uiState[id]=c.classList.contains('collapsed');saveUIState();}
@@ -812,13 +827,7 @@ function renderDashboard(){
   const incSum=$('incSummaryBox');
   if(incSum){
     let totalEggs=0,totalHatched=0,totalSold=0,totalIncome=0,totalCost=0;
-    incubation.forEach(inc=>{
-      totalEggs+=(+inc.eggs||0);totalHatched+=(+inc.hatched||0);
-      const incSales=sales.filter(s=>s.incubationId===inc.id);
-      totalSold+=incSales.reduce((s,x)=>s+(+x.count||0),0);
-      totalIncome+=incSales.reduce((s,x)=>s+(+x.count||0)*(+x.price||0),0);
-      totalCost+=(+inc.eggCost||0)+(+inc.transportCost||0);
-    });
+    incubation.forEach(inc=>{totalEggs+=(+inc.eggs||0);totalHatched+=(+inc.hatched||0);const incSales=sales.filter(s=>s.incubationId===inc.id);totalSold+=incSales.reduce((s,x)=>s+(+x.count||0),0);totalIncome+=incSales.reduce((s,x)=>s+(+x.count||0)*(+x.price||0),0);totalCost+=(+inc.eggCost||0)+(+inc.transportCost||0);});
     const avgRate=totalEggs>0?(totalHatched/totalEggs*100):0;
     incSum.innerHTML=`<div class="kpi"><div class="kbox b"><div class="kl">🥚 کل تخم</div><div class="kv">${fa(totalEggs)}</div></div><div class="kbox g"><div class="kl">🐣 کل جوجه</div><div class="kv">${fa(totalHatched)}</div></div><div class="kbox p"><div class="kl">💰 فروش</div><div class="kv">${fa(totalSold)}</div></div><div class="kbox o"><div class="kl">📊 نرخ هچ</div><div class="kv">${avgRate.toFixed(1)}٪</div></div></div><div style="font-size:11px;color:var(--muted);margin-top:6px">📈 نرخ هچ کل</div>${spectrumBar(avgRate)}<div class="mini"><span class="k">💵 درآمد</span><span class="v" style="color:var(--success)">${fmtMoney(totalIncome)}</span></div><div class="mini"><span class="k">🧾 هزینه</span><span class="v" style="color:var(--warning)">${fmtMoney(totalCost)}</span></div><div class="mini"><span class="k">📈 سود</span><span class="v" style="color:${totalIncome-totalCost>=0?'var(--success)':'var(--danger)'}">${fmtMoney(totalIncome-totalCost)}</span></div>`;
   }
@@ -832,22 +841,8 @@ function renderDashboard(){
   const fBox=$('flockStatus');
   if(fBox){
     let fh='';
-    groups.forEach(g=>{
-      const members=flocks.filter(f=>f.groupId===g.id);if(!members.length)return;
-      const totalInit=members.reduce((s,m)=>s+(+m.count||0),0);
-      let grpLast=null;for(let i=daily.length-1;i>=0;i--){if(daily[i].flock===g.name){grpLast=daily[i];break;}}
-      let alive,deaths;
-      if(grpLast){alive=grpLast.alive;deaths=totalInit-alive;}
-      else{let ma=0,md=0;members.forEach(m=>{let ml=null;for(let i=daily.length-1;i>=0;i--){if(daily[i].flock===m.name){ml=daily[i];break;}}ma+=ml?ml.alive:m.count;md+=(m.count-(ml?ml.alive:m.count));});alive=ma;deaths=md;}
-      const pct=totalInit>0?((deaths/totalInit)*100).toFixed(1):0;
-      fh+=`<div class="item group" style="border-right-color:${g.color||'#3b82f6'}"><div class="info"><div class="t">🏠 ${g.name}</div><div class="s">جمع: ${fa(totalInit)} | تلفات: ${fa(deaths)} (${pct}%)</div></div><div style="font-weight:900;color:${g.color||'#3b82f6'};font-size:17px">${fa(alive)}</div></div>`;
-    });
-    flocks.filter(f=>!f.groupId).forEach(f=>{
-      let last=null;for(let i=daily.length-1;i>=0;i--){if(daily[i].flock===f.name){last=daily[i];break;}}
-      const alive=last?last.alive:f.count;const age=todayC-jToC(f.hatch);const dts=f.count-alive;
-      const pct=f.count>0?((dts/f.count)*100).toFixed(1):0;
-      fh+=`<div class="item" style="border-right-color:${f.color||'var(--primary)'}"><div class="info"><div class="t">🐔 ${f.name}</div><div class="s">سن: ${fa(age)} روز | تلفات: ${fa(dts)} (${pct}%)</div></div><div style="font-weight:900;color:${f.color||'var(--primary)'}">${fa(alive)}</div></div>`;
-    });
+    groups.forEach(g=>{const members=flocks.filter(f=>f.groupId===g.id);if(!members.length)return;const totalInit=members.reduce((s,m)=>s+(+m.count||0),0);let grpLast=null;for(let i=daily.length-1;i>=0;i--){if(daily[i].flock===g.name){grpLast=daily[i];break;}}let alive,deaths;if(grpLast){alive=grpLast.alive;deaths=totalInit-alive;}else{let ma=0,md=0;members.forEach(m=>{let ml=null;for(let i=daily.length-1;i>=0;i--){if(daily[i].flock===m.name){ml=daily[i];break;}}ma+=ml?ml.alive:m.count;md+=(m.count-(ml?ml.alive:m.count));});alive=ma;deaths=md;}const pct=totalInit>0?((deaths/totalInit)*100).toFixed(1):0;fh+=`<div class="item group" style="border-right-color:${g.color||'#3b82f6'}"><div class="info"><div class="t">🏠 ${g.name}</div><div class="s">جمع: ${fa(totalInit)} | تلفات: ${fa(deaths)} (${pct}%)</div></div><div style="font-weight:900;color:${g.color||'#3b82f6'};font-size:17px">${fa(alive)}</div></div>`;});
+    flocks.filter(f=>!f.groupId).forEach(f=>{let last=null;for(let i=daily.length-1;i>=0;i--){if(daily[i].flock===f.name){last=daily[i];break;}}const alive=last?last.alive:f.count;const age=todayC-jToC(f.hatch);const dts=f.count-alive;const pct=f.count>0?((dts/f.count)*100).toFixed(1):0;fh+=`<div class="item" style="border-right-color:${f.color||'var(--primary)'}"><div class="info"><div class="t">🐔 ${f.name}</div><div class="s">سن: ${fa(age)} روز | تلفات: ${fa(dts)} (${pct}%)</div></div><div style="font-weight:900;color:${f.color||'var(--primary)'}">${fa(alive)}</div></div>`;});
     fBox.innerHTML=fh||'<div class="empty"><div class="et">گله‌ای نیست</div></div>';
   }
   const weekAgo=todayC-7;
@@ -1572,7 +1567,7 @@ function renderSettingsModal(){
   const views={main:renderSettingsMain,general:renderSettingsGeneral,theme:renderSettingsTheme,vaxSched:renderSettingsVaxSched,backup:renderSettingsBackup,file:renderSettingsFile,help:renderSettingsHelp,adv:renderSettingsAdv};
   const render=views[settingsView]||renderSettingsMain;
   const isMain=settingsView==='main';
-  const pi={general:{t:'⚙️ عمومی',s:'قیمت‌ها'},theme:{t:'🎨 نمایش',s:'تم'},vaxSched:{t:'💉 برنامه واکسن',s:'استاندارد'},backup:{t:'💾 پشتیبان',s:'ذخیره'},file:{t:'📁 فایل‌ها',s:'Excel'},help:{t:'📖 راهنما',s:'آموزش'},adv:{t:'🔧 پیشرفته',s:'حساس'}};
+  const pi={general:{t:'⚙️ عمومی',s:'قیمت‌ها'},theme:{t:'🎨 نمایش و فونت',s:'تم + سایز'},vaxSched:{t:'💉 برنامه واکسن',s:'استاندارد'},backup:{t:'💾 پشتیبان',s:'ذخیره'},file:{t:'📁 فایل‌ها',s:'Excel'},help:{t:'📖 راهنما',s:'آموزش'},adv:{t:'🔧 پیشرفته',s:'حساس'}};
   const header=isMain?'':`<div class="settings-page-header"><button class="back-btn" onclick="settingsNav('main')">→</button><div style="flex:1"><div class="page-title">${pi[settingsView]?.t||''}</div><div class="page-sub">${pi[settingsView]?.s||''}</div></div></div>`;
   openModal('',`${header}<div class="settings-menu">${render()}</div>`);
 }
@@ -1581,7 +1576,7 @@ function renderSettingsMain(){
   return `<div class="settings-section-title">تنظیمات پایه</div>
     <div class="settings-section" style="margin-top:0">
       <div class="settings-row" onclick="settingsNav('general')"><div class="sr-icon purple">⚙️</div><div class="sr-content"><div class="sr-title">تنظیمات عمومی</div><div class="sr-sub">قیمت تخم، خوراک، جوجه، کارگر</div></div><div class="sr-chevron">‹</div></div>
-      <div class="settings-row" onclick="settingsNav('theme')"><div class="sr-icon blue">🎨</div><div class="sr-content"><div class="sr-title">حالت نمایش</div><div class="sr-sub">${theme==='dark'?'🌙 تیره':'☀️ روشن'}</div></div><div class="sr-chevron">‹</div></div>
+      <div class="settings-row" onclick="settingsNav('theme')"><div class="sr-icon blue">🎨</div><div class="sr-content"><div class="sr-title">حالت نمایش و فونت</div><div class="sr-sub">${theme==='dark'?'🌙 تیره':theme==='auto'?'🔄 خودکار':'☀️ روشن'} • فونت ${fa(settings.fontSize||14)}px</div></div><div class="sr-chevron">‹</div></div>
       <div class="settings-row" onclick="settingsNav('vaxSched')"><div class="sr-icon green">💉</div><div class="sr-content"><div class="sr-title">برنامه واکسیناسیون</div><div class="sr-sub">${fa(vaxSchedules.length)} واکسن</div></div><div class="sr-chevron">‹</div></div>
     </div>
     <div class="settings-section-title">داده‌ها</div>
@@ -1596,7 +1591,7 @@ function renderSettingsMain(){
     </div>
     <div class="settings-section-title">درباره</div>
     <div class="settings-section" style="margin-top:0">
-      <div class="settings-row" style="cursor:default"><div class="sr-icon gray">ℹ️</div><div class="sr-content"><div class="sr-title">آدینه — نسخه ۱.۵</div><div class="sr-sub">آفلاین • ${today}${isStandalone()?' • 🏠 نصب‌شده':''}</div></div></div>
+      <div class="settings-row" style="cursor:default"><div class="sr-icon gray">ℹ️</div><div class="sr-content"><div class="sr-title">آدینه — نسخه ۱.۶</div><div class="sr-sub">آفلاین • ${today}${isStandalone()?' • 🏠 نصب‌شده':''}</div></div></div>
     </div>`;
 }
 function renderSettingsGeneral(){
@@ -1608,7 +1603,46 @@ function renderSettingsGeneral(){
   return `<div class="sec" style="border-color:var(--info)"><div class="sec-t" style="color:var(--info)">💰 قیمت‌های پیش‌فرض</div><div class="fg"><label class="fl">🥚 تخم نطفه‌دار</label><input class="fi money" type="text" inputmode="numeric" id="sEggPriceFertile" value="${epF}" oninput="formatNumInput(this)"></div><div class="fg"><label class="fl">🥚 تخم خوراکی</label><input class="fi money" type="text" inputmode="numeric" id="sEggPriceEdible" value="${epE}" oninput="formatNumInput(this)"></div><div class="fg"><label class="fl">🌾 کیلو خوراک</label><input class="fi money" type="text" inputmode="numeric" id="sFeedPrice" value="${fp}" oninput="formatNumInput(this)"></div><div class="fg"><label class="fl">🐣 قیمت جوجه</label><input class="fi money" type="text" inputmode="numeric" id="sChickPrice" value="${cp}" oninput="formatNumInput(this)"></div><div class="fg"><label class="fl">👷 حقوق ماهانه کارگر</label><input class="fi money" type="text" inputmode="numeric" id="sLaborCost" value="${lc}" oninput="formatNumInput(this)"></div></div><button class="btn btn-p" onclick="saveSettings()">💾 ذخیره</button>`;
 }
 function renderSettingsTheme(){
-  return `<div class="sec" style="border-color:var(--primary)"><div class="sec-t">🎨 حالت نمایش</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px"><div onclick="saveTheme('light')" style="cursor:pointer;background:${theme==='light'?'var(--primary)':'var(--soft)'};color:${theme==='light'?'#fff':'var(--text)'};padding:16px;border-radius:12px;text-align:center;border:2px solid ${theme==='light'?'var(--primary)':'transparent'}"><div style="font-size:32px">☀️</div><div style="font-size:13px;font-weight:800;margin-top:6px">روشن</div></div><div onclick="saveTheme('dark')" style="cursor:pointer;background:${theme==='dark'?'var(--primary)':'var(--soft)'};color:${theme==='dark'?'#fff':'var(--text)'};padding:16px;border-radius:12px;text-align:center;border:2px solid ${theme==='dark'?'var(--primary)':'transparent'}"><div style="font-size:32px">🌙</div><div style="font-size:13px;font-weight:800;margin-top:6px">تیره</div></div></div></div><button class="btn btn-s" onclick="resetUICards()">📐 بازنشانی چیدمان</button>`;
+  const cur=+((settings.fontSize)||14);
+  return `
+  <div class="sec" style="border-color:var(--primary)">
+    <div class="sec-t">🎨 حالت نمایش</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">
+      <div onclick="saveTheme('light')" style="cursor:pointer;background:${theme==='light'?'var(--primary)':'var(--soft)'};color:${theme==='light'?'#fff':'var(--text)'};padding:12px 4px;border-radius:12px;text-align:center;border:2px solid ${theme==='light'?'var(--primary)':'transparent'}">
+        <div style="font-size:26px">☀️</div>
+        <div style="font-size:11px;font-weight:800;margin-top:4px">روشن</div>
+      </div>
+      <div onclick="saveTheme('dark')" style="cursor:pointer;background:${theme==='dark'?'var(--primary)':'var(--soft)'};color:${theme==='dark'?'#fff':'var(--text)'};padding:12px 4px;border-radius:12px;text-align:center;border:2px solid ${theme==='dark'?'var(--primary)':'transparent'}">
+        <div style="font-size:26px">🌙</div>
+        <div style="font-size:11px;font-weight:800;margin-top:4px">تیره</div>
+      </div>
+      <div onclick="saveTheme('auto')" style="cursor:pointer;background:${theme==='auto'?'var(--primary)':'var(--soft)'};color:${theme==='auto'?'#fff':'var(--text)'};padding:12px 4px;border-radius:12px;text-align:center;border:2px solid ${theme==='auto'?'var(--primary)':'transparent'}">
+        <div style="font-size:26px">🔄</div>
+        <div style="font-size:11px;font-weight:800;margin-top:4px">خودکار</div>
+      </div>
+    </div>
+    ${theme==='auto'?'<div style="font-size:10.5px;color:var(--muted);margin-top:6px;text-align:center">طبق تنظیمات گوشی</div>':''}
+  </div>
+  
+  <div class="sec" style="border-color:var(--info)">
+    <div class="sec-t" style="color:var(--info)">🔤 اندازه فونت</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+      <span style="font-size:11px;color:var(--muted);font-weight:800">A</span>
+      <input type="range" id="fontSlider" min="11" max="20" step="1" value="${cur}" oninput="changeFontSize(this.value)" style="flex:1">
+      <span style="font-size:18px;color:var(--primary);font-weight:900">A</span>
+    </div>
+    <div style="text-align:center;margin-top:6px">
+      <span style="font-weight:900;color:var(--primary);font-size:13px" id="fontSizeLbl">${fa(cur)}px</span>
+    </div>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <button type="button" class="btn btn-s btn-sm" style="flex:1;margin:0;font-size:11px" onclick="changeFontSize(12);$('fontSlider').value=12">کوچک</button>
+      <button type="button" class="btn btn-s btn-sm" style="flex:1;margin:0;font-size:11px" onclick="changeFontSize(14);$('fontSlider').value=14">معمولی</button>
+      <button type="button" class="btn btn-s btn-sm" style="flex:1;margin:0;font-size:11px" onclick="changeFontSize(16);$('fontSlider').value=16">بزرگ</button>
+    </div>
+  </div>
+  
+  <button class="btn btn-s" onclick="resetUICards()">📐 بازنشانی چیدمان کارت‌ها</button>
+  `;
 }
 function renderSettingsVaxSched(){
   const rows=[...vaxSchedules].sort((a,b)=>a.age-b.age).map(v=>`<div class="item" style="border-right-color:var(--purple)"><div class="info"><div class="t">💉 ${v.name}</div><div class="s">📅 سن: ${fa(v.age)} روز | 💧 ${v.method||'-'}</div></div><div class="item-actions"><button class="ibtn" onclick="openVaxSchedForm(${v.id})">✏️</button><button class="ibtn d" onclick="deleteVaxSched(${v.id})">🗑️</button></div></div>`).join('');
@@ -1618,40 +1652,84 @@ function openVaxSchedForm(id){const item=id?vaxSchedules.find(x=>x.id===id):{nam
 async function saveVaxSched(id){const item={name:$('vsName').value.trim(),age:+$('vsAge').value||0,method:$('vsMethod').value.trim()};if(!item.name){toast('❌');return;}if(id)item.id=id;await dbPut('vaxSchedules',item);vaxSchedules=await dbAll('vaxSchedules');autoBackupToLocal();closeModal();toast('✅');settingsView='vaxSched';renderSettingsModal();}
 async function deleteVaxSched(id){const v=vaxSchedules.find(x=>x.id===id);askDelete(v?v.name:'واکسن',async()=>{await dbDel('vaxSchedules',id);vaxSchedules=await dbAll('vaxSchedules');autoBackupToLocal();settingsView='vaxSched';renderSettingsModal();});}
 
+/* ═══ BACKUP (جمع‌وجور) ═══ */
 function renderSettingsBackup(){
   const ab=getAutoBackupInfo();
-  const logs=backupLog.slice().sort((a,b)=>b.time-a.time).slice(0,8);
-  const logsHtml=logs.map(l=>`<div class="mini" style="font-size:11.5px"><span class="k">${fmtDateTime(l.time)}</span><span class="v" style="color:var(--success)">✅</span></div>`).join('')||'<div style="color:var(--muted);font-size:11.5px;padding:6px 0">هنوز پشتیبانی نگرفته‌اید</div>';
-  let autoStatus='<span class="bs-value danger">غیرفعال</span>';let autoDetail='';
-  if(ab){const ageColor=ab.age<86400000?'ok':ab.age<AUTOBACKUP_MAX_AGE?'warn':'danger';autoStatus=`<span class="bs-value ${ageColor}">${formatAge(ab.age)}</span>`;autoDetail=`<div style="font-size:11px;color:var(--muted);margin-top:4px">حجم: ${formatBytes(ab.size)}</div>`;}
-  const standalone=isStandalone();
-  const canShare=navigator.canShare!==undefined;
-  const canPickDir=window.showDirectoryPicker!==undefined;
+  const logs=backupLog.slice().sort((a,b)=>b.time-a.time).slice(0,5);
+  const logsHtml=logs.map(l=>`<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:10.5px;border-bottom:1px dashed var(--border)"><span style="color:var(--muted)">${fmtDateTime(l.time)}</span><span style="color:var(--success)">✅</span></div>`).join('');
+  let autoStatus='غیرفعال';
+  if(ab){
+    const days=Math.floor(ab.age/86400000);
+    const hours=Math.floor(ab.age/3600000);
+    const mins=Math.floor(ab.age/60000);
+    if(mins<1) autoStatus='همین الان';
+    else if(hours<1) autoStatus=fa(mins)+' دقیقه پیش';
+    else if(days<1) autoStatus=fa(hours)+' ساعت پیش';
+    else autoStatus=fa(days)+' روز پیش';
+  }
+  const isDark=document.body.classList.contains('dark');
+  const canShare=!!navigator.canShare;
+  const canPickDir=!!window.showDirectoryPicker;
+  
   return `
-  ${!standalone?`<div class="alert b" style="margin-bottom:12px"><div style="font-size:11.5px;line-height:1.7">📱 <b>نصب روی گوشی:</b> دکمه 📱 در هدر یا از منوی Chrome «افزودن به صفحه اصلی»</div></div>`:''}
-  <div class="alert g" style="margin-bottom:12px"><div><div style="font-weight:900;font-size:13px;margin-bottom:4px">✅ پشتیبان‌گیری خودکار فعال</div><div style="font-size:11.5px;line-height:1.7">• هر <b>۲۰ ثانیه</b> خودکار در مرورگر<br>• اگر IndexedDB پاک شود، خودکار بازیابی می‌شود</div></div></div>
-  <div class="sec" style="border-color:var(--info)"><div class="sec-t" style="color:var(--info)">🔄 پشتیبان خودکار (داخلی)</div><div class="backup-stat"><div><div class="bs-label">آخرین ذخیره</div>${autoDetail}</div>${autoStatus}</div><div style="display:flex;gap:6px;margin-top:8px"><button class="btn btn-s btn-sm" style="flex:1;margin:0;font-size:11.5px" onclick="manualAutoBackup()">🔄 ذخیره الان</button><button class="btn btn-d btn-sm" style="flex:1;margin:0;font-size:11.5px" onclick="clearAutoBackupConfirm()">🗑️ پاک</button></div></div>
-  <div class="sec s" style="border-color:var(--success)"><div class="sec-t" style="color:var(--success)">☁️ همگام‌سازی ابری</div><div class="backup-stat"><div><div class="bs-label">آخرین اشتراک‌گذاری</div>${settings.lastCloudBackupTime?`<div style="font-size:11px;color:var(--muted);margin-top:4px">${fmtDateTime(settings.lastCloudBackupTime)}</div>`:''}</div>${settings.lastCloudBackupTime?'<span class="bs-value ok">✅</span>':'<span class="bs-value warn">⚠️ هرگز</span>'}</div>
-  ${canShare?`<button class="btn btn-g" onclick="shareBackupToCloud()">📤 اشتراک‌گذاری (Drive، تلگرام، ایمیل)</button>`:`<div class="alert y" style="font-size:11px">مرورگر تو از اشتراک‌گذاری پشتیبانی نمی‌کند، از دانلود استفاده کن</div>`}
-  <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.6">💡 فایل پشتیبان را در Google Drive، Telegram، WhatsApp یا Email ذخیره کن</div></div>
-  ${canPickDir?`<div class="sec" style="border-color:var(--purple)"><div class="sec-t" style="color:var(--purple)">📁 ذخیره خودکار در پوشه</div><div class="backup-stat"><div><div class="bs-label">پوشه</div>${settings.autoSaveFolderName?`<div style="font-size:11px;color:var(--muted);margin-top:4px">${settings.autoSaveFolderName}</div>`:''}</div>${settings.autoSaveFolderSet?'<span class="bs-value ok">✅ فعال</span>':'<span class="bs-value warn">⚠️ تنظیم نشده</span>'}</div>
-  <button class="btn btn-p" onclick="setupAutoSaveFolder()">📁 انتخاب پوشه (مثلاً Google Drive)</button>
-  ${settings.autoSaveFolderSet?`<button class="btn btn-s" style="margin-top:6px" onclick="saveToFolderNow()">💾 ذخیره الان در پوشه</button>`:''}
-  <button class="btn btn-o" onclick="loadFromFolder()">📂 بارگذاری از پوشه</button>
-  <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.6">💡 اگر Google Drive روی گوشی نصب است، پوشه Drive/Adineh را انتخاب کن — خودکار sync می‌شود</div></div>`:''}
-  <div class="sec" style="border-color:var(--warning)"><div class="sec-t" style="color:var(--warning)">💾 دانلود دستی</div><button class="btn btn-o" onclick="exportBackup()">📥 دانلود پشتیبان کامل (JSON)</button><button class="btn btn-s" onclick="importBackup()">📤 بازیابی از فایل</button></div>
-  <div class="sec b" style="border-color:var(--info)"><div class="sec-t" style="color:var(--info)">📱 نصب به عنوان اپ</div>${standalone?'<div class="alert g" style="margin:0">✅ آدینه نصب شده</div>':'<button class="btn btn-p" onclick="installPWA()">📱 نصب روی گوشی</button>'}</div>
-  <div class="sec" style="border-color:var(--purple)"><div class="sec-t" style="color:var(--purple)">📜 تاریخچه</div>${logsHtml}${logs.length>0?`<button class="btn btn-s btn-sm" style="margin-top:8px;font-size:11px" onclick="clearBackupLog()">🗑️ پاک کردن</button>`:''}</div>
-  <div class="sec" style="border-color:var(--warning)"><div class="sec-t" style="color:var(--warning)">📊 آمار داده‌ها</div><div class="mini"><span class="k">📅 روزانه</span><span class="v">${fa(dailyLog.length)}</span></div><div class="mini"><span class="k">🥚 جوجه‌کشی</span><span class="v">${fa(incubation.length)}</span></div><div class="mini"><span class="k">💰 فروش</span><span class="v">${fa(sales.length)}</span></div><div class="mini"><span class="k">🐔 گله</span><span class="v">${fa(flocks.length)}</span></div><div class="mini"><span class="k">💊 دارو</span><span class="v">${fa(vaccines.length)}</span></div><div class="mini"><span class="k">📷 عکس</span><span class="v">${fa(photos.length)}</span></div></div>
+  <div class="sec" style="border-color:var(--success);margin-bottom:8px">
+    <div class="sec-t" style="color:var(--success);display:flex;justify-content:space-between;align-items:center">
+      <span>💾 پشتیبان خودکار</span>
+      <span style="font-size:10px;font-weight:700;color:${ab?'var(--success)':'var(--danger)'}">${ab?'● فعال':'○ غیرفعال'}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px">
+      <span style="color:var(--muted)">آخرین ذخیره:</span>
+      <span style="font-weight:900;color:var(--success)">${autoStatus}</span>
+    </div>
+    ${ab?`<div style="display:flex;justify-content:space-between;font-size:11px;margin-top:2px"><span style="color:var(--muted)">حجم:</span><span style="font-weight:800">${formatBytes(ab.size)}</span></div>`:''}
+    <div style="font-size:10px;color:var(--muted);margin-top:6px;text-align:center;line-height:1.5">هر ۲۰ ثانیه خودکار — اگر IndexedDB پاک شد، خودکار بازیابی می‌شود</div>
+    <button class="btn btn-s btn-sm" style="width:100%;margin-top:6px;font-size:11px" onclick="manualAutoBackup()">🔄 ذخیره داخلی الان</button>
+  </div>
+  
+  <div class="sec" style="border-color:var(--info);margin-bottom:8px">
+    <div class="sec-t" style="color:var(--info)">☁️ ارسال به ابر</div>
+    ${canShare?`<button class="btn btn-g" style="font-size:12px;margin-bottom:6px" onclick="shareBackupToCloud()">📤 اشتراک‌گذاری (Drive، تلگرام، ایمیل)</button>`:''}
+    ${canPickDir?`<button class="btn btn-p" style="font-size:12px;margin-bottom:6px" onclick="setupAutoSaveFolder()">📁 ${settings.autoSaveFolderSet?'تغییر':'انتخاب'} پوشه ذخیره خودکار</button>`:''}
+    ${settings.autoSaveFolderSet?`<div style="display:flex;justify-content:space-between;font-size:11px;padding:6px 8px;background:var(--card);border-radius:6px;margin-bottom:6px"><span style="color:var(--muted)">📂 پوشه:</span><span style="font-weight:800">${settings.autoSaveFolderName||'—'}</span></div>`:''}
+    ${settings.autoSaveFolderSet?`<button class="btn btn-s" style="font-size:11px;margin-bottom:4px" onclick="saveToFolderNow()">💾 ذخیره فوری در پوشه</button>`:''}
+    ${canPickDir?`<button class="btn btn-o" style="font-size:11px" onclick="loadFromFolder()">📂 بازیابی از پوشه</button>`:''}
+  </div>
+  
+  <div class="sec" style="border-color:var(--warning);margin-bottom:8px">
+    <div class="sec-t" style="color:var(--warning)">💾 دانلود / بازیابی فایل</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      <button class="btn btn-o" style="font-size:11.5px;margin:0" onclick="exportBackup()">📥 دانلود</button>
+      <button class="btn btn-s" style="font-size:11.5px;margin:0" onclick="importBackup()">📤 بازیابی</button>
+    </div>
+  </div>
+  
+  ${!isStandalone()?`<div class="sec b" style="border-color:var(--info);margin-bottom:8px"><div class="sec-t" style="color:var(--info)">📱 نصب به عنوان اپ</div><button class="btn btn-p" style="font-size:12px" onclick="installPWA()">📱 نصب روی گوشی</button></div>`:''}
+  
+  ${logs.length>0?`
+  <details class="help-d">
+    <summary class="help-s">📜 تاریخچه (${fa(logs.length)})</summary>
+    <div class="help-c">${logsHtml}<button class="btn btn-s btn-sm" style="margin-top:8px;font-size:10.5px;width:100%" onclick="clearBackupLog()">🗑️ پاک کردن</button></div>
+  </details>`:''}
+  
+  <details class="help-d">
+    <summary class="help-s">📊 آمار داده‌ها</summary>
+    <div class="help-c" style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      <div style="text-align:center;padding:6px;background:var(--card);border-radius:6px"><div style="font-size:9.5px;color:var(--muted)">📅 روزانه</div><div style="font-weight:900;font-size:14px">${fa(dailyLog.length)}</div></div>
+      <div style="text-align:center;padding:6px;background:var(--card);border-radius:6px"><div style="font-size:9.5px;color:var(--muted)">🥚 جوجه‌کشی</div><div style="font-weight:900;font-size:14px">${fa(incubation.length)}</div></div>
+      <div style="text-align:center;padding:6px;background:var(--card);border-radius:6px"><div style="font-size:9.5px;color:var(--muted)">💰 فروش</div><div style="font-weight:900;font-size:14px">${fa(sales.length)}</div></div>
+      <div style="text-align:center;padding:6px;background:var(--card);border-radius:6px"><div style="font-size:9.5px;color:var(--muted)">🐔 گله</div><div style="font-weight:900;font-size:14px">${fa(flocks.length)}</div></div>
+      <div style="text-align:center;padding:6px;background:var(--card);border-radius:6px"><div style="font-size:9.5px;color:var(--muted)">💊 دارو</div><div style="font-weight:900;font-size:14px">${fa(vaccines.length)}</div></div>
+      <div style="text-align:center;padding:6px;background:var(--card);border-radius:6px"><div style="font-size:9.5px;color:var(--muted)">📷 عکس</div><div style="font-weight:900;font-size:14px">${fa(photos.length)}</div></div>
+    </div>
+  </details>
   `;
 }
 function manualAutoBackup(){const ok=autoBackupToLocal();if(ok){const info=getAutoBackupInfo();toast('✅ ذخیره شد ('+formatBytes(info.size)+')');}else toast('❌ خطا');settingsView='backup';renderSettingsModal();}
-function clearAutoBackupConfirm(){showDialog({icon:'⚠️',title:'پاک کردن پشتیبان داخلی؟',message:'اگر پاک کنی و IndexedDB خالی شود، بازیابی خودکار نخواهد شد.',actions:[{text:'انصراف',type:'secondary',onClick:closeDialog},{text:'🗑️ پاک کن',type:'danger',onClick:()=>{clearAutoBackup();toast('🗑️');settingsView='backup';renderSettingsModal();closeDialog();}}]});}
 function clearBackupLog(){showDialog({icon:'🗑️',title:'پاک کردن تاریخچه؟',message:'فقط لیست پاک می‌شود.',actions:[{text:'انصراف',type:'secondary',onClick:closeDialog},{text:'🗑️ پاک',type:'danger',onClick:async()=>{await dbClear('backupLog');backupLog=[];toast('🗑️');settingsView='backup';renderSettingsModal();closeDialog();}}]});}
 
 function exportBackup(){
   const now=Date.now();
-  const data={_m:{app:'Adineh',ver:'1.5',date:today,time:now,type:'full'},settings,dailyLog,incubation,sales,reminders,photos,devices,birds,flocks,groups,ingredients,standards,finances,vaccines,inventory,vaxSchedules,lossCauses,uiState,theme:{name:theme}};
+  const data={_m:{app:'Adineh',ver:'1.6',date:today,time:now,type:'full'},settings,dailyLog,incubation,sales,reminders,photos,devices,birds,flocks,groups,ingredients,standards,finances,vaccines,inventory,vaxSchedules,lossCauses,uiState,theme:{name:theme}};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const d=new Date();
@@ -1708,34 +1786,22 @@ function renderSettingsHelp(){
       <li>دکمه 📱 بالای صفحه را بزن یا منوی ⋮ → «افزودن به صفحه اصلی»</li>
       <li>روی «نصب» بزن</li>
       <li>آیکون 🐔 روی صفحه اصلی می‌آید</li>
-      <li>مثل اپ باز می‌شود (تمام‌صفحه، بدون نوار مرورگر)</li>
     </ol>
     <p><strong>در آیفون (Safari):</strong></p>
-    <ol>
-      <li>دکمه اشتراک‌گذاری ⬆️ را بزن</li>
-      <li>«Add to Home Screen» را انتخاب کن</li>
-    </ol>
-    <p><strong>نکته مهم:</strong> PWA روی فایل محلی کار نمی‌کند. باید از یک آدرس HTTPS (مثل GitHub Pages، Netlify) استفاده کنی.</p>
+    <ol><li>دکمه اشتراک‌گذاری ⬆️ را بزن</li><li>«Add to Home Screen» را انتخاب کن</li></ol>
+  </div></details>
+  <details class="help-d"><summary class="help-s">🎨 تم و فونت</summary><div class="help-c">
+    <p><strong>۳ حالت تم:</strong> روشن، تیره، خودکار (طبق تنظیمات گوشی)</p>
+    <p><strong>فونت:</strong> غربیلک برای تنظیم سایز بین ۱۱ تا ۲۰ پیکسل</p>
+    <p>تنظیمات از فایل `تنظیمات ← حالت نمایش و فونت` قابل تغییر است.</p>
   </div></details>
   <details class="help-d"><summary class="help-s">☁️ همگام‌سازی ابری</summary><div class="help-c">
-    <p><strong>۱. اشتراک‌گذاری (ساده‌ترین):</strong> دکمه «📤 اشتراک‌گذاری» → فایل به Drive، Telegram، WhatsApp یا Email می‌رود.</p>
-    <p><strong>۲. پوشه خودکار (بهترین):</strong> «📁 انتخاب پوشه» → مثلاً Google Drive/Adineh → از این به بعد خودکار هر ۵ دقیقه ذخیره می‌شود.</p>
-    <p><strong>۳. دانلود دستی:</strong> هفته‌ای یک بار، دانلود و در Google Drive ذخیره کن.</p>
+    <p><strong>۱. اشتراک‌گذاری:</strong> دکمه 📤 → Google Drive، Telegram، WhatsApp یا Email</p>
+    <p><strong>۲. پوشه خودکار:</strong> 📁 انتخاب پوشه → مثلاً Google Drive/Adineh → خودکار هر ۵ دقیقه</p>
+    <p><strong>۳. دانلود دستی:</strong> هفته‌ای یک بار</p>
   </div></details>
-  <details class="help-d"><summary class="help-s">🚀 شروع سریع</summary><div class="help-c"><ol><li><strong>گله‌ها</strong> را بساز</li><li>اگر چند گله داری، آنها را در یک <strong>گروه</strong> بگذار</li><li>هر روز از بخش <strong>روزانه</strong> تلفات/تخم/خوراک را ثبت کن</li><li>واکسن‌ها را از بخش <strong>دارو</strong> مدیریت کن</li><li>برای <strong>جوجه‌کشی</strong> از تب مربوطه استفاده کن</li></ol></div></details>
-  <details class="help-d"><summary class="help-s">📊 داشبورد</summary><div class="help-c"><ul><li><strong>۴ عدد بالا:</strong> کل زنده، تخم، تلفات، فروش</li><li><strong>📈 نمودار:</strong> ۱۴ روزه / هفتگی / ماهانه</li><li><strong>💵 قیمت تمام‌شده:</strong> با تیک‌های کنترلی</li><li><strong>🔮 پیش‌بینی:</strong> تخمین تخم بر اساس داده‌های قبلی</li><li><strong>📊 هفتگی/ماهانه:</strong> آمار دوره</li><li><strong>🔔 هشدارها:</strong> تلفات، واکسن عقب، انبار</li></ul></div></details>
-  <details class="help-d"><summary class="help-s">📅 ثبت روزانه</summary><div class="help-c"><p><strong>تب‌ها:</strong> بالا ۴ تب — برای جابجایی، ۱ ثانیه نگه دار تا بلرزه، بعد بکش.</p><p><strong>فرم آکاردئونی:</strong> هر بخش جدا باز/بسته می‌شود. روی هدر بزن. حالت ذخیره می‌شود.</p><p><strong>دکمه‌های بالا:</strong> 📂 باز کردن همه / 📁 بستن همه</p></div></details>
-  <details class="help-d"><summary class="help-s">💊 دارو و واکسن</summary><div class="help-c"><p><strong>💊 خلاصه:</strong> برای هر گله عقب‌افتاده‌ها را نشان می‌دهد</p><p><strong>ثبت:</strong> می‌توانی چند قلم در یک رکورد ثبت کنی</p></div></details>
-  <details class="help-d"><summary class="help-s">📦 انبار</summary><div class="help-c"><ul><li>خوراک، دارو، واکسن</li><li>⚠️ حد هشدار (زیر آن هشدار می‌دهد)</li><li>📅 انقضا</li><li>💰 قیمت</li></ul></div></details>
-  <details class="help-d"><summary class="help-s">🌾 خوراک</summary><div class="help-c"><p>درصد هر قلم → مجموع باید <strong>۱۰۰٪</strong> باشد. رنگ سبز = عالی، زرد = قابل قبول، قرمز = اشتباه.</p></div></details>
-  <details class="help-d"><summary class="help-s">🐓 گله‌ها</summary><div class="help-c"><p><strong>🏠 گروه:</strong> چند گله در یک سالن</p><p><strong>🐔 گله:</strong> اسم، هچ، تعداد اولیه، قیمت اختصاصی</p><p><strong>🔗 ادغام:</strong> چند گله → یک گله جدید</p><p><strong>⚙️ دستگاه:</strong> دستگاه‌های جوجه‌کشی</p><p><strong>🐔 پرنده:</strong> انواع پرنده با زمان هچ</p><p><strong>🔍 علل تلفات:</strong> لیست علت‌ها</p></div></details>
-  <details class="help-d"><summary class="help-s">🥚 جوجه‌کشی</summary><div class="help-c"><p><strong>🏪 فروشنده تخم + 💰 هزینه + 🚚 حمل:</strong> برای محاسبه سود</p><p><strong>📋 علل تلفات:</strong> هر تعداد</p><p><strong>✏️ نام دستی:</strong> پرنده جدید بساز</p><p><strong>🐔 مدیریت:</strong> برو به پرنده‌ها و برگرد (اطلاعات حفظ می‌شود)</p><p><strong>💰 فروش جوجه:</strong> بعد از هچ، دکمه فعال می‌شود (چند بار می‌توانی بفروشی)</p></div></details>
-  <details class="help-d"><summary class="help-s">💰 فروش و مالی</summary><div class="help-c"><p><strong>فروش:</strong> جوجه، تخم، مرغ حذفی</p><p><strong>مالی:</strong> درآمد و هزینه ماهانه → سود خودکار</p></div></details>
-  <details class="help-d"><summary class="help-s">🔔 یادآورها و 📷 عکس</summary><div class="help-c"><p>یادآور با تاریخ و متن + لیست خودکار سیستمی</p><p>عکس برای مستندسازی سالن، بیماری</p></div></details>
-  <details class="help-d"><summary class="help-s">💾 پشتیبان‌گیری — کامل</summary><div class="help-c">
-    <p><strong>چرا لازم است؟</strong> IndexedDB به مرورگر و آدرس فایل گره خورده. اگر:</p>
-    <ul><li>فایل را از مسیر دیگری باز کنی</li><li>مرورگر عوض کنی</li><li>Cache مرورگر را پاک کنی</li><li>حالت ناشناس (Incognito) استفاده کنی</li></ul>
-    <p>داده‌ها از دست می‌رود.</p>
+  <details class="help-d"><summary class="help-s">🚀 شروع سریع</summary><div class="help-c"><ol><li><strong>گله‌ها</strong> را بساز</li><li>هر روز از بخش <strong>روزانه</strong> ثبت کن</li><li>واکسن‌ها را از بخش <strong>دارو</strong> مدیریت کن</li><li>برای <strong>جوجه‌کشی</strong> از تب مربوطه استفاده کن</li></ol></div></details>
+  <details class="help-d"><summary class="help-s">💾 پشتیبان‌گیری</summary><div class="help-c">
     <p><strong>راه‌های پشتیبان:</strong></p>
     <ol>
       <li><strong>خودکار (داخلی):</strong> هر ۲۰ ثانیه در مرورگر. اگر IndexedDB خالی شود، خودکار بازیابی.</li>
@@ -1743,18 +1809,12 @@ function renderSettingsHelp(){
       <li><strong>پوشه خودکار:</strong> انتخاب پوشه → هر ۵ دقیقه ذخیره می‌شود.</li>
       <li><strong>دانلود دستی:</strong> هفته‌ای یک بار JSON دانلود کن.</li>
     </ol>
-    <p><strong>توصیه:</strong> هفته‌ای یک بار پشتیبان دانلود کن و در Google Drive نگه دار.</p>
   </div></details>
   <details class="help-d"><summary class="help-s">🔄 Pull to Refresh</summary><div class="help-c"><p>از بالای صفحه به پایین بکش → «🔄 رها کنید» → ول کن.</p></div></details>
-  <details class="help-d"><summary class="help-s">🔢 اعداد و تاریخ</summary><div class="help-c"><p><strong>اعداد:</strong> فارسی یا انگلیسی، هر دو قبول.</p><p><strong>تاریخ:</strong> <code>1405/06/22</code> — از ۱۴۰۵ به بعد. دکمه 📅 تقویم باز می‌کند.</p></div></details>
   <details class="help-d"><summary class="help-s">❓ سوالات متداول</summary><div class="help-c">
-    <p><strong>❓ داده‌هایم گم شد!</strong><br>⚙️ تنظیمات → 💾 پشتیبان → 📤 بازیابی از فایل. یا اگر پشتیبان داخلی موجود است، خودکار بازیابی می‌شود.</p>
+    <p><strong>❓ داده‌هایم گم شد!</strong><br>⚙️ تنظیمات → 💾 پشتیبان → 📤 بازیابی از فایل.</p>
     <p><strong>❓ چطور به گوشی دیگر منتقل کنم؟</strong><br>۱- پشتیبان دانلود کن ۲- فایل HTML را هم دانلود کن ۳- روی گوشی جدید باز کن ۴- پشتیبان بازیابی کن</p>
-    <p><strong>❓ PWA کار نمی‌کند؟</strong><br>باید از آدرس HTTPS باز کنی. GitHub Pages، Netlify یا Vercel رایگان هستند.</p>
-    <p><strong>❓ چطور گله ادغام کنم؟</strong><br>گله‌ها → 🔗 ادغام → تیک → نام جدید → تأیید</p>
-    <p><strong>❓ چند واکسن با یک کلیک؟</strong><br>فرم روزانه → 💊 دارو → ➕ افزودن → ➕ افزودن قلم</p>
   </div></details>
-  <details class="help-d"><summary class="help-s">⌨️ میان‌برها</summary><div class="help-c"><ul><li>کلیک روی هدر کارت → باز/بسته</li><li>دکمه 📂 بالا → همه کارت‌ها</li><li>کلیک روی تب + نگه‌داشتن → جابجایی (روزانه)</li><li>دکمه 💾 بالا → پشتیبان سریع</li><li>دکمه 📱 بالا → نصب PWA</li></ul></div></details>
   <div class="help-card warn"><div class="hc-title">⚠️ نکات مهم</div><div class="hc-body"><ul><li>هرگز در حالت <strong>ناشناس</strong> استفاده نکن</li><li>Cache و Cookies مرورگر را پاک نکن</li><li>همیشه از همان مسیر و همان مرورگر باز کن</li><li>قبل از تغییر مهم، پشتیبان بگیر</li></ul></div></div>
   `;
 }
@@ -1826,14 +1886,16 @@ function exportExcel(){
 async function loadAll(){
   await tryRestoreFromLocal();
   let s=await dbGet('settings',1);
-  if(!s){s={eggPriceFertile:30000,eggPriceEdible:15000,eggPrice:30000,feedPrice:100000,chickPrice:120000,laborCost:5000000};s.id=1;await dbPut('settings',s);}
+  if(!s){s={eggPriceFertile:30000,eggPriceEdible:15000,eggPrice:30000,feedPrice:100000,chickPrice:120000,laborCost:0,fontSize:14};s.id=1;await dbPut('settings',s);}
   settings=s;
   if(!settings.eggPriceFertile&&settings.eggPrice)settings.eggPriceFertile=settings.eggPrice;
   if(!settings.eggPriceEdible)settings.eggPriceEdible=Math.round((settings.eggPriceFertile||30000)/2);
   if(!settings.eggPrice)settings.eggPrice=settings.eggPriceFertile;
   if(!settings.costInclude)settings.costInclude={feed:true,medicine:true,labor:true,chick:true,transport:true};
+  if(!settings.fontSize)settings.fontSize=14;
   settings.id=1;await dbPut('settings',settings);
   await loadUIState();await loadTheme();
+  if(settings.fontSize)applyFontSize(settings.fontSize);
   dailyLog=await dbAll('dailyLog');incubation=await dbAll('incubation');sales=await dbAll('sales');
   reminders=await dbAll('reminders');photos=await dbAll('photos');devices=await dbAll('devices');
   birds=await dbAll('birds');flocks=await dbAll('flocks');groups=await dbAll('groups');
